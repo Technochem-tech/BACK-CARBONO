@@ -1,0 +1,16 @@
+# Ignorar arquivos e pastas do Visual Studio
+.vs/
+*.vsidx
+*.vscode/
+*.suo
+*.user
+*.userossc
+*.sln.docstates
+
+# Ignorar arquivos de build do .NET
+bin/
+obj/
+
+# Ignorar arquivos do sistema
+*.DS_Store
+Thumbs.db

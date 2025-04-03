@@ -1,0 +1,6 @@
+@WebApplicationCarbono_HostAddress = http://localhost:5079
+
+GET {{WebApplicationCarbono_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
