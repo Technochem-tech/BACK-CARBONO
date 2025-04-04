@@ -7,16 +7,16 @@ namespace WebApplicationCarbono.controler
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class SaldoController : ControllerBase
+    public class ControllerSaldo : ControllerBase
     {
         private readonly ISaldo _saldoServiços;
 
-        public SaldoController(ISaldo SaldoServiços)
+        public ControllerSaldo(ISaldo SaldoServiços)
         {
             _saldoServiços = SaldoServiços;
         }
 
-        [HttpGet("IdUsuario")]
+        [HttpGet("GetSaldo/{IdUsuario}")]
         public IActionResult GetSaldo (int IdUsuario)
         {
             try
@@ -30,6 +30,22 @@ namespace WebApplicationCarbono.controler
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("GetCreditos/{IdUsuario}")]
+        public IActionResult GetCreditos (int IdUsuario)
+        {
+            try
+            {
+                var creditosCarbono = _saldoServiços.GetCreditos(IdUsuario);
+                return Ok((new{ creditosdecarbonoemconta =  creditosCarbono}));
+            }
+            catch (Exception ex)
+            {
+
+               return BadRequest(ex.Message);
+            }
+        }
+
 
     }
 }
