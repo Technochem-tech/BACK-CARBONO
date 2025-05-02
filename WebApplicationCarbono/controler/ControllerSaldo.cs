@@ -47,5 +47,19 @@ namespace WebApplicationCarbono.controler
         }
 
 
+        [HttpGet]
+        public IActionResult ListarProjetos()
+        {
+            try
+            {
+                var projetos = _saldoServiços.ListarProjetos();
+                return Ok(new { projetossustentaveis = projetos });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
     }
 }
