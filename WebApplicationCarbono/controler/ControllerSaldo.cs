@@ -47,7 +47,7 @@ namespace WebApplicationCarbono.controler
         }
 
 
-        [HttpGet]
+        [HttpGet("ListarProjetos")]
         public IActionResult ListarProjetos()
         {
             try
@@ -60,6 +60,21 @@ namespace WebApplicationCarbono.controler
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("ConsultarHistorico")]
+        public IActionResult Get()
+        {
+            try
+            {
+                var historico = _saldoServiços.ConsultarHistorico();
+                return Ok(new { historicodetransacao = historico });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
 
     }
 }

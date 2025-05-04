@@ -14,6 +14,51 @@ namespace WebApplicationCarbono.Serviços
             _stringConexao = configuaração.GetConnectionString("DefaultConnection");
         }
 
+        public List<object> ConsultarHistorico()
+        {
+            var lista = new List<object>();
+
+            try
+            {
+                using (var conexao = new NpgsqlConnection(_stringConexao))
+                {
+                    conexao.Open();
+
+                    string query = @"
+                        SELECT t.data, t.descricao, t.tipo, t.quantidade, t.valor, 
+                               u.nome AS usuario, d.nome AS destinatario, t.status
+                        FROM transacoes t
+                        LEFT JOIN usuarios u ON u.id = t.id_usuario
+                        LEFT JOIN usuarios d ON d.id = t.id_destinatario";
+
+                    using (var comando = new NpgsqlCommand(query, conexao))
+                    using (var leitor = comando.ExecuteReader())
+                    {
+                        while (leitor.Read())
+                        {
+                            lista.Add(new
+                            {
+                                data = leitor.GetDateTime(leitor.GetOrdinal("data")).ToString("dd/MM/yyyy"),
+                                descricao = leitor["descricao"].ToString(),
+                                tipo = leitor["tipo"].ToString(),
+                                quantidade = Convert.ToDecimal(leitor["quantidade"]),
+                                valor = Convert.ToDecimal(leitor["valor"]),
+                                usuario = leitor["usuario"].ToString(),
+                                destinatario = leitor["destinatario"].ToString(),
+                                status = leitor["status"].ToString()
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Erro ao consultar o histórico de transações: " + ex.Message);
+            }
+
+            return lista;
+        }
+
         public decimal GetCreditos(int IdUsuario)
         {
             decimal creditosDeCarbonoEmConta = 0.0m;
