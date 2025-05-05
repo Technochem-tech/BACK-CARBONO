@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using WebApplicationCarbono.Interface;
+using WebApplicationCarbono.Modelos;
 using WebApplicationCarbono.Serviços;
 
 namespace WebApplicationCarbono.controler
@@ -73,6 +74,19 @@ namespace WebApplicationCarbono.controler
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        [HttpGet("ConsultarUsuario{id}")]
+        public ActionResult<Usuario> GetUsuario(int id)
+        {
+            var usuario = _saldoServiços.GetUsuario(id);
+
+            if (usuario == null)
+            {
+                return NotFound("Usuário não encontrado.");
+            }
+
+            return Ok(usuario);
         }
 
 

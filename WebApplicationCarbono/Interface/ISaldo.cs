@@ -8,5 +8,9 @@ namespace WebApplicationCarbono.Interface
         decimal GetCreditos(int IdUsuario);
         List<object> ListarProjetos();
         List<object> ConsultarHistorico();
+        Usuario GetUsuario(int IdUsuario);
+
+
+
     }
 }

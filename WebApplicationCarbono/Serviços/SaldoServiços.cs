@@ -14,6 +14,8 @@ namespace WebApplicationCarbono.Serviços
             _stringConexao = configuaração.GetConnectionString("DefaultConnection");
         }
 
+        
+
         public List<object> ConsultarHistorico()
         {
             var lista = new List<object>();
@@ -136,6 +138,46 @@ namespace WebApplicationCarbono.Serviços
 
         }
 
+        public Usuario GetUsuario(int IdUsuario)
+        {
+            Usuario usuario = null;
+
+            try
+            {
+                using (var conexao = new NpgsqlConnection(_stringConexao))
+                {
+                    conexao.Open();
+
+                    var query = "SELECT * FROM usuarios WHERE id = @Id";
+                    using (var comando = new NpgsqlCommand(query, conexao))
+                    {
+                        comando.Parameters.AddWithValue("Id", IdUsuario);
+
+                        using (var reader = comando.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                usuario = new Usuario
+                                {
+                                    codigoCadastro = reader.GetInt32(reader.GetOrdinal("id")),
+                                    Nome = reader.GetString(reader.GetOrdinal("nome")),
+                                    Email = reader.GetString(reader.GetOrdinal("email")),
+                                    empresa = reader.GetString(reader.GetOrdinal("empresa")),
+                                    CNPJ = reader.GetString(reader.GetOrdinal("cnpj")),
+                                    Telefone = reader.GetString(reader.GetOrdinal("telefone"))
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Erro ao consultar usuário: " + ex.Message);
+            }
+
+            return usuario;
+        }
         public List<object> ListarProjetos()
         {
             var listaProjetos = new List<object>();
@@ -171,5 +213,7 @@ namespace WebApplicationCarbono.Serviços
 
             return listaProjetos;
         }
+
+        
     }
 }
