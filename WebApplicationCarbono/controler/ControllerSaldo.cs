@@ -32,20 +32,7 @@ namespace WebApplicationCarbono.controler
             }
         }
 
-        [HttpGet("GetCreditos/{IdUsuario}")]
-        public IActionResult GetCreditos (int IdUsuario)
-        {
-            try
-            {
-                var creditosCarbono = _saldoServiços.GetCreditos(IdUsuario);
-                return Ok((new{ creditosdecarbonoemconta =  creditosCarbono}));
-            }
-            catch (Exception ex)
-            {
-
-               return BadRequest(ex.Message);
-            }
-        }
+     
 
 
         [HttpGet("ListarProjetos")]
@@ -77,7 +64,7 @@ namespace WebApplicationCarbono.controler
         }
 
         [HttpGet("ConsultarUsuario{id}")]
-        public ActionResult<Usuario> GetUsuario(int id)
+        public ActionResult<BuscarUsuario> GetUsuario(int id)
         {
             var usuario = _saldoServiços.GetUsuario(id);
 
