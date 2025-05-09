@@ -12,6 +12,9 @@ builder.Services.AddSwaggerGen();
 // Configurações de serviço (Registrar antes de chamar builder.Build())
 builder.Services.AddScoped<ISaldo, SaldoServiços>();
 builder.Services.AddScoped<ICreditos, CreditosServiços>();
+builder.Services.AddScoped<IProjetos, ProjetosServiços>();
+builder.Services.AddScoped<ITransaçao, TransacaoServiços>();
+builder.Services.AddScoped<IUsuario, UsuarioServiço>();
 
 var app = builder.Build();
 

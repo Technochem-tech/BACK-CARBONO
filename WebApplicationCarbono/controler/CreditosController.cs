@@ -10,10 +10,10 @@ namespace WebApplicationCarbono.controler
     public class CreditosController : ControllerBase
     {
 
-       private readonly ICreditos _saldoServiços;
+       private readonly ICreditos _CreditosServiços;
        public CreditosController(ICreditos CreditosServiços) 
        {
-            _saldoServiços = CreditosServiços;
+            _CreditosServiços = CreditosServiços;
        }
 
         [HttpGet("GetCreditos/{IdUsuario}")]
@@ -21,7 +21,7 @@ namespace WebApplicationCarbono.controler
         {
             try
             {
-                var creditosCarbono = _saldoServiços.GetCreditos(IdUsuario);
+                var creditosCarbono = _CreditosServiços.GetCreditos(IdUsuario);
                 return Ok((new { creditosdecarbonoemconta = creditosCarbono }));
             }
             catch (Exception ex)

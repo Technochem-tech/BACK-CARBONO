@@ -16,51 +16,6 @@ namespace WebApplicationCarbono.Serviços
 
         
 
-        public List<object> ConsultarHistorico()
-        {
-            var lista = new List<object>();
-
-            try
-            {
-                using (var conexao = new NpgsqlConnection(_stringConexao))
-                {
-                    conexao.Open();
-
-                    string query = @"
-                        SELECT t.data, t.descricao, t.tipo, t.quantidade, t.valor, 
-                               u.nome AS usuario, d.nome AS destinatario, t.status
-                        FROM transacoes t
-                        LEFT JOIN usuarios u ON u.id = t.id_usuario
-                        LEFT JOIN usuarios d ON d.id = t.id_destinatario";
-
-                    using (var comando = new NpgsqlCommand(query, conexao))
-                    using (var leitor = comando.ExecuteReader())
-                    {
-                        while (leitor.Read())
-                        {
-                            lista.Add(new
-                            {
-                                data = leitor.GetDateTime(leitor.GetOrdinal("data")).ToString("dd/MM/yyyy"),
-                                descricao = leitor["descricao"].ToString(),
-                                tipo = leitor["tipo"].ToString(),
-                                quantidade = Convert.ToDecimal(leitor["quantidade"]),
-                                valor = Convert.ToDecimal(leitor["valor"]),
-                                usuario = leitor["usuario"].ToString(),
-                                destinatario = leitor["destinatario"].ToString(),
-                                status = leitor["status"].ToString()
-                            });
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Erro ao consultar o histórico de transações: " + ex.Message);
-            }
-
-            return lista;
-        }
-
        
         public decimal GetSaldo(int IdUsuario)
         {
@@ -98,81 +53,7 @@ namespace WebApplicationCarbono.Serviços
 
         }
 
-        public BuscarUsuario GetUsuario(int IdUsuario)
-        {
-            BuscarUsuario usuario = null;
-
-            try
-            {
-                using (var conexao = new NpgsqlConnection(_stringConexao))
-                {
-                    conexao.Open();
-
-                    var query = "SELECT * FROM usuarios WHERE id = @Id";
-                    using (var comando = new NpgsqlCommand(query, conexao))
-                    {
-                        comando.Parameters.AddWithValue("Id", IdUsuario);
-
-                        using (var reader = comando.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                usuario = new BuscarUsuario
-                                {
-                                    codigoCadastro = reader.GetInt32(reader.GetOrdinal("id")),
-                                    Nome = reader.GetString(reader.GetOrdinal("nome")),
-                                    Email = reader.GetString(reader.GetOrdinal("email")),
-                                    empresa = reader.GetString(reader.GetOrdinal("empresa")),
-                                    CNPJ = reader.GetString(reader.GetOrdinal("cnpj")),
-                                    Telefone = reader.GetString(reader.GetOrdinal("telefone"))
-                                };
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Erro ao consultar usuário: " + ex.Message);
-            }
-
-            return usuario;
-        }
-        public List<object> ListarProjetos()
-        {
-            var listaProjetos = new List<object>();
-
-            try
-            {
-                using (var conexao = new NpgsqlConnection(_stringConexao))
-                {
-                    conexao.Open();
-
-                    var consulta = "SELECT titulo, valor, descricao FROM projetos";
-                    using (var comando = new NpgsqlCommand(consulta, conexao))
-                    {
-                        using (var reader = comando.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                listaProjetos.Add(new
-                                {
-                                    titulo = reader["titulo"].ToString(),
-                                    valor = Convert.ToDecimal(reader["valor"]),
-                                    descricao = reader["descricao"].ToString()
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Erro ao listar os projetos sustentáveis: " + ex.Message);
-            }
-
-            return listaProjetos;
-        }
+       
 
         
     }
