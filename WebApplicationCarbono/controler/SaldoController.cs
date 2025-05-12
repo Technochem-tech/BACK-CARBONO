@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using WebApplicationCarbono.Interface;
 using WebApplicationCarbono.Modelos;
@@ -6,6 +7,7 @@ using WebApplicationCarbono.Serviços;
 
 namespace WebApplicationCarbono.controler
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class SaldoController : ControllerBase
@@ -31,12 +33,6 @@ namespace WebApplicationCarbono.controler
                 return BadRequest(ex.Message);
             }
         }
-
-
-        
-
-     
-
 
     }
 }

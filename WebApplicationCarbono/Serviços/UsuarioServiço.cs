@@ -31,7 +31,7 @@ namespace WebApplicationCarbono.Serviços
                     {
                         comando.Parameters.AddWithValue("@nome", cadastroUsuarioDto.Nome);
                         comando.Parameters.AddWithValue("@email", cadastroUsuarioDto.Email);
-                        comando.Parameters.AddWithValue("@senha", cadastroUsuarioDto.Senha); // Ideal: hash da senha
+                        comando.Parameters.AddWithValue("@senha", cadastroUsuarioDto.Senha); 
                         comando.Parameters.AddWithValue("@empresa", cadastroUsuarioDto.Empresa);
                         comando.Parameters.AddWithValue("@cnpj", cadastroUsuarioDto.CNPJ);
                         comando.Parameters.AddWithValue("@telefone", cadastroUsuarioDto.Telefone);

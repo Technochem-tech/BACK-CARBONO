@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using WebApplicationCarbono.Dtos;
 using WebApplicationCarbono.Interface;
@@ -17,7 +18,7 @@ namespace WebApplicationCarbono.controler
         {
             _usuarioServiços = UsuarioServiço;
         }
-
+        [Authorize]
         [HttpGet("ConsultarUsuario{id}")]
         public ActionResult<BuscarUsuario> GetUsuario(int id)
         {
