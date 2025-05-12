@@ -6,6 +6,8 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using WebApplicationCarbono.Dtos;
 using WebApplicationCarbono.Interface;
+using Microsoft.Extensions.Configuration;
+using BCrypt.Net;
 
 namespace WebApplicationCarbono.Serviços
 {
@@ -23,6 +25,7 @@ namespace WebApplicationCarbono.Serviços
         public string Logar(LoginUsuarioDto loginDto)
         {
             int idUsuario = 0;
+            string senhaHashBanco = string.Empty;
 
             using (var conexao = new NpgsqlConnection(_stringConexao))
             {
@@ -36,10 +39,7 @@ namespace WebApplicationCarbono.Serviços
                     {
                         if (leitor.Read())
                         {
-                            var senhaBanco = leitor.GetString(leitor.GetOrdinal("senha"));
-                            if (senhaBanco != loginDto.Senha)
-                                throw new Exception("Senha inválida.");
-
+                            senhaHashBanco = leitor.GetString(leitor.GetOrdinal("senha"));
                             idUsuario = leitor.GetInt32(leitor.GetOrdinal("id"));
                         }
                         else
@@ -50,7 +50,13 @@ namespace WebApplicationCarbono.Serviços
                 }
             }
 
-            // Gerar token
+            // Verifica a senha usando o mesmo algoritmo BCrypt
+            if (!BCrypt.Net.BCrypt.Verify(loginDto.Senha, senhaHashBanco))
+            {
+                throw new Exception("Senha inválida.");
+            }
+
+            // Geração do token JWT
             var manipuladorToken = new JwtSecurityTokenHandler();
             var chave = Encoding.ASCII.GetBytes(_jwtConfig.SecretKey);
             var descricaoToken = new SecurityTokenDescriptor
@@ -60,7 +66,7 @@ namespace WebApplicationCarbono.Serviços
                     new Claim(ClaimTypes.NameIdentifier, idUsuario.ToString()),
                     new Claim(ClaimTypes.Email, loginDto.Email)
                 }),
-                Expires = DateTime.UtcNow.AddHours(2),
+                Expires = DateTime.UtcNow.AddMinutes(30),
                 Issuer = _jwtConfig.Issuer,
                 Audience = _jwtConfig.Audience,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(chave), SecurityAlgorithms.HmacSha256Signature)

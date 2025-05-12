@@ -1,17 +1,20 @@
-﻿using Npgsql;
+﻿using System;
+using BCrypt.Net;
+using Npgsql;
 using WebApplicationCarbono.Dtos;
 using WebApplicationCarbono.Interface;
 using WebApplicationCarbono.Modelos;
+using Microsoft.Extensions.Configuration;
 
 namespace WebApplicationCarbono.Serviços
 {
     public class UsuarioServiço : IUsuario
     {
-        // passando a conexão do banco
-        private readonly String _stringConexao;
-        public UsuarioServiço(IConfiguration configuaração)
+        private readonly string _stringConexao;
+
+        public UsuarioServiço(IConfiguration configuration)
         {
-            _stringConexao = configuaração.GetConnectionString("DefaultConnection");
+            _stringConexao = configuration.GetConnectionString("DefaultConnection");
         }
 
         public void CadastrarUsuario(CadastroUsuarioDto cadastroUsuarioDto)
@@ -22,6 +25,9 @@ namespace WebApplicationCarbono.Serviços
                 {
                     conexao.Open();
 
+                    // Gera hash seguro da senha com salt interno
+                    string senhaHash = BCrypt.Net.BCrypt.HashPassword(cadastroUsuarioDto.Senha);
+
                     string query = @"
                         INSERT INTO usuarios (nome, email, senha, empresa, cnpj, telefone)
                         VALUES (@nome, @email, @senha, @empresa, @cnpj, @telefone);
@@ -31,7 +37,7 @@ namespace WebApplicationCarbono.Serviços
                     {
                         comando.Parameters.AddWithValue("@nome", cadastroUsuarioDto.Nome);
                         comando.Parameters.AddWithValue("@email", cadastroUsuarioDto.Email);
-                        comando.Parameters.AddWithValue("@senha", cadastroUsuarioDto.Senha); 
+                        comando.Parameters.AddWithValue("@senha", senhaHash);
                         comando.Parameters.AddWithValue("@empresa", cadastroUsuarioDto.Empresa);
                         comando.Parameters.AddWithValue("@cnpj", cadastroUsuarioDto.CNPJ);
                         comando.Parameters.AddWithValue("@telefone", cadastroUsuarioDto.Telefone);

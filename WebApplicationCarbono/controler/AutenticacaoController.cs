@@ -18,6 +18,11 @@ namespace WebApplicationCarbono.Controllers
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginUsuarioDto loginDto)
         {
+            if (loginDto == null || string.IsNullOrEmpty(loginDto.Email) || string.IsNullOrEmpty(loginDto.Senha))
+            {
+                return BadRequest(new { mensagem = "Email e senha são obrigatórios." });
+            }
+
             try
             {
                 var token = _servicoAutenticacao.Logar(loginDto);
