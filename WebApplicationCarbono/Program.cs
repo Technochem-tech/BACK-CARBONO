@@ -5,9 +5,10 @@ using MercadoPago.Config; // <- SDK do Mercado Pago
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ? Lê o accessToken da configuração
+// Lê o accessToken da configuração
 var mercadoPagoSettings = builder.Configuration.GetSection("MercadoPago").Get<MercadoPagoSettings>();
 MercadoPagoConfig.AccessToken = mercadoPagoSettings.AccessToken;
+
 
 // JWT e Swagger
 builder.Services.AddJwtAuthentication(builder.Configuration);
@@ -25,6 +26,7 @@ builder.Services.AddScoped<ITransaçao, TransacaoServiços>();
 builder.Services.AddScoped<IUsuario, UsuarioServiço>();
 builder.Services.AddScoped<IAutenticacao, AutenticacaoServico>();
 builder.Services.AddScoped<IPagamentoService, PagamentoService>();
+builder.Services.AddScoped<IRedefinicaoSenha, RedefinicaoSenhaServico>();
 
 var app = builder.Build();
 
