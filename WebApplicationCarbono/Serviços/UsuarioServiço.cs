@@ -52,6 +52,24 @@ namespace WebApplicationCarbono.Serviços
             }
         }
 
+        public void EditarTelefone(int id, EditarTelefoneUsuarioDto dto)
+        {
+            using var conexao = new NpgsqlConnection(_stringConexao);
+            conexao.Open();
+
+            var comando = new NpgsqlCommand("UPDATE usuarios SET telefone = @Telefone WHERE id = @Id", conexao);
+            comando.Parameters.AddWithValue("@Telefone", dto.telefone);
+            comando.Parameters.AddWithValue("@Id", id);
+
+            int linhasAfetadas = comando.ExecuteNonQuery();
+            if (linhasAfetadas == 0)
+            {
+                throw new Exception("Projeto não encontrado.");
+            }
+
+
+        }
+
         public BuscarUsuario GetUsuario(int IdUsuario)
         {
             BuscarUsuario usuario = null;

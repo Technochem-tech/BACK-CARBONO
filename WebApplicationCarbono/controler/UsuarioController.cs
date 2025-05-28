@@ -39,13 +39,21 @@ namespace WebApplicationCarbono.controler
         {
             try
             {
-                _usuarioServiços.CadastrarUsuario(cadastroUsuarioDto); // nome correto aqui
+                _usuarioServiços.CadastrarUsuario(cadastroUsuarioDto); 
                 return Ok("Usuário cadastrado com sucesso.");
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
+
+        }
+
+        [HttpPut("EditarTelefone")]
+        public IActionResult Editar([FromQuery] int id, [FromBody] EditarTelefoneUsuarioDto dto)
+        {
+            _usuarioServiços.EditarTelefone(id, dto);
+            return Ok(new { mensagem = "Telefone atualizado com sucesso!" });
         }
 
     }

@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using WebApplicationCarbono.Dtos;
 using WebApplicationCarbono.Interface;
 
 namespace WebApplicationCarbono.Serviços
@@ -13,6 +14,55 @@ namespace WebApplicationCarbono.Serviços
             _stringConexao = configuaração.GetConnectionString("DefaultConnection");
         }
 
+        public void CadastrarProjetos(CadastroProjetosDto dto)
+        {
+            using var conexao = new NpgsqlConnection(_stringConexao);
+            conexao.Open();
+
+            var comando = new NpgsqlCommand(
+                "INSERT INTO projetos (titulo, descricao, valor) VALUES (@Titulo, @Descricao, @Valor)", conexao);
+
+            comando.Parameters.AddWithValue("@Titulo", dto.titulo);
+            comando.Parameters.AddWithValue("@Descricao", dto.descriçao);
+            comando.Parameters.AddWithValue("@Valor", dto.valor);
+
+            comando.ExecuteNonQuery();
+        }
+
+        public void DeletarProjeto(int id)
+        {
+            using var conexao = new NpgsqlConnection(_stringConexao);
+            conexao.Open();
+
+            var comando = new NpgsqlCommand("DELETE FROM projetos WHERE id = @Id", conexao);
+            comando.Parameters.AddWithValue("@Id", id);
+
+            int linhasAfetadas = comando.ExecuteNonQuery();
+            if (linhasAfetadas == 0)
+            {
+                throw new Exception("Projeto não encontrado para deletar.");
+            }
+
+
+        }
+
+        public void EditarProjeto(int id, EditarProjetoDto dto)
+        {
+            using var conexao = new NpgsqlConnection(_stringConexao);
+            conexao.Open();
+
+            var comando = new NpgsqlCommand("UPDATE projetos SET titulo = @Titulo, descricao = @Descricao, valor = @Valor WHERE id = @Id", conexao);
+            comando.Parameters.AddWithValue("@Titulo", dto.titulo);
+            comando.Parameters.AddWithValue("@Descricao", dto.descriçao);
+            comando.Parameters.AddWithValue("@Valor", (dto.valor));
+            comando.Parameters.AddWithValue("@Id", id);
+
+            int linhasAfetadas = comando.ExecuteNonQuery();
+            if (linhasAfetadas == 0)
+            {
+                throw new Exception("Projeto não encontrado.");
+            }
+        }
 
         public List<object> ListarProjetos()
         {
