@@ -110,5 +110,25 @@ namespace WebApplicationCarbono.Serviços
 
             return usuario;
         }
+
+        public void SalvarImagemUsuario(int idUsuario, IFormFile imagem)
+        {
+            using var conexao = new NpgsqlConnection(_stringConexao);
+            conexao.Open();
+
+            using var stream = new MemoryStream();
+            imagem.CopyTo(stream);
+            byte[] bytesImagem = stream.ToArray();
+
+            var comando = new NpgsqlCommand("UPDATE usuarios SET img_usuario = @Imagem WHERE id = @Id", conexao);
+            comando.Parameters.AddWithValue("@Imagem", bytesImagem);
+            comando.Parameters.AddWithValue("@Id", idUsuario);
+
+            int linhasAfetadas = comando.ExecuteNonQuery();
+            if (linhasAfetadas == 0)
+            {
+                throw new Exception("Usuário não encontrado.");
+            }
+        }
     }
 }

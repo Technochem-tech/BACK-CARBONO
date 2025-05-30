@@ -48,12 +48,26 @@ namespace WebApplicationCarbono.controler
             }
 
         }
-
+        [Authorize]
         [HttpPut("EditarTelefone")]
         public IActionResult Editar([FromQuery] int id, [FromBody] EditarTelefoneUsuarioDto dto)
         {
             _usuarioServiços.EditarTelefone(id, dto);
             return Ok(new { mensagem = "Telefone atualizado com sucesso!" });
+        }
+        [Authorize]
+        [HttpPost("upload-imagem")]
+        public IActionResult UploadImagem(int idUsuario, [FromForm] ImagemUsuarioDto dto)
+        {
+            try
+            {
+                _usuarioServiços.SalvarImagemUsuario(idUsuario, dto.Imagem);
+                return Ok(new { mensagem = "Imagem salva com sucesso!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
         }
 
     }
