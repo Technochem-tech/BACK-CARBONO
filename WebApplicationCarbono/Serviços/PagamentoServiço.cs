@@ -2,7 +2,7 @@
 using MercadoPago.Resource.Payment;
 using System.Threading.Tasks;
 
-public class PagamentoService : IPagamentoService
+public class PagamentoServiço : IPagamento
 {
     public async Task<Payment> CriarPagamentoPixAsync(decimal valor, string emailCliente)
     {

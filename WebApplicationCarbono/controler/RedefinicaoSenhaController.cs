@@ -17,7 +17,7 @@ namespace WebApplicationCarbono.controler
         }
 
         [HttpPost("solicitar")]
-        public IActionResult SolicitarRedefinicao([FromBody] ResetSenhaRequestDto dto)
+        public IActionResult SolicitarRedefinicao([FromBody] EditarSenhaRequestDto dto)
         {
             if (string.IsNullOrEmpty(dto.Email))
                 return BadRequest(new { mensagem = "Email é obrigatório" });

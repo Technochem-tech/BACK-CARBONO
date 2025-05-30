@@ -1,4 +1,4 @@
-﻿public class ImagemUsuarioDto
+﻿public class AtualizarImgUsuarioDto
 {
     public IFormFile Imagem { get; set; }
 }

@@ -1,14 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
-
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class PagamentoController : ControllerBase
 {
-    private readonly IPagamentoService _pagamentoService;
+    private readonly IPagamento _pagamentoService;
 
-    public PagamentoController(IPagamentoService pagamentoService)
+    public PagamentoController(IPagamento pagamentoService)
     {
         _pagamentoService = pagamentoService;
     }

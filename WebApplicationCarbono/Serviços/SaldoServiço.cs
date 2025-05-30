@@ -5,11 +5,11 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace WebApplicationCarbono.Serviços
 {
-    public class SaldoServiços : ISaldo
+    public class SaldoServiço : ISaldo
     {
         // passando a conexão do banco
         private readonly String _stringConexao;
-        public SaldoServiços(IConfiguration configuaração)
+        public SaldoServiço(IConfiguration configuaração)
         {
             _stringConexao = configuaração.GetConnectionString("DefaultConnection");
         }

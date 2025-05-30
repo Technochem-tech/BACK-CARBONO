@@ -11,12 +11,12 @@ using BCrypt.Net;
 
 namespace WebApplicationCarbono.Serviços
 {
-    public class AutenticacaoServico : IAutenticacao
+    public class AutenticacaoServiço : IAutenticacao
     {
         private readonly string _stringConexao;
         private readonly JwtSettings _jwtConfig;
 
-        public AutenticacaoServico(IConfiguration configuracao, IOptions<JwtSettings> jwtOptions)
+        public AutenticacaoServiço(IConfiguration configuracao, IOptions<JwtSettings> jwtOptions)
         {
             _stringConexao = configuracao.GetConnectionString("DefaultConnection");
             _jwtConfig = jwtOptions.Value;

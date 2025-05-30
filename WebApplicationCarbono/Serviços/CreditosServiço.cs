@@ -3,12 +3,12 @@ using WebApplicationCarbono.Interface;
 
 namespace WebApplicationCarbono.Serviços
 {
-    public class CreditosServiços : ICreditos
+    public class CreditosServiço : ICreditos
     {
 
         private readonly string _stringConexao;
 
-        public CreditosServiços(IConfiguration configuração)
+        public CreditosServiço(IConfiguration configuração)
         {
             _stringConexao = configuração.GetConnectionString("DefaultConnection");
         }

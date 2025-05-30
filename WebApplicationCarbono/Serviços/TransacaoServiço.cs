@@ -3,11 +3,11 @@ using WebApplicationCarbono.Interface;
 
 namespace WebApplicationCarbono.Serviços
 {
-    public class TransacaoServiços : ITransaçao
+    public class TransacaoServiço : ITransaçao
     {
         // passando a conexão do banco
         private readonly String _stringConexao;
-        public TransacaoServiços(IConfiguration configuaração)
+        public TransacaoServiço(IConfiguration configuaração)
         {
             _stringConexao = configuaração.GetConnectionString("DefaultConnection");
         }

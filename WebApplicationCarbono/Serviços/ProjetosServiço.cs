@@ -4,12 +4,12 @@ using WebApplicationCarbono.Interface;
 
 namespace WebApplicationCarbono.Serviços
 {
-    public class ProjetosServiços : IProjetos
+    public class ProjetosServiço : IProjetos
     {
 
         // passando a conexão do banco
         private readonly String _stringConexao;
-        public ProjetosServiços(IConfiguration configuaração)
+        public ProjetosServiço(IConfiguration configuaração)
         {
             _stringConexao = configuaração.GetConnectionString("DefaultConnection");
         }

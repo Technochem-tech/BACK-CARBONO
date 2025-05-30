@@ -19,14 +19,14 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddScoped<ISaldo, SaldoServiços>();
-builder.Services.AddScoped<ICreditos, CreditosServiços>();
-builder.Services.AddScoped<IProjetos, ProjetosServiços>();
-builder.Services.AddScoped<ITransaçao, TransacaoServiços>();
+builder.Services.AddScoped<ISaldo, SaldoServiço>();
+builder.Services.AddScoped<ICreditos, CreditosServiço>();
+builder.Services.AddScoped<IProjetos, ProjetosServiço>();
+builder.Services.AddScoped<ITransaçao, TransacaoServiço>();
 builder.Services.AddScoped<IUsuario, UsuarioServiço>();
-builder.Services.AddScoped<IAutenticacao, AutenticacaoServico>();
-builder.Services.AddScoped<IPagamentoService, PagamentoService>();
-builder.Services.AddScoped<IRedefinicaoSenha, RedefinicaoSenhaServico>();
+builder.Services.AddScoped<IAutenticacao, AutenticacaoServiço>();
+builder.Services.AddScoped<IPagamento, PagamentoServiço>();
+builder.Services.AddScoped<IRedefinicaoSenha, RedefinicaoSenhaServiço>();
 
 var app = builder.Build();
 

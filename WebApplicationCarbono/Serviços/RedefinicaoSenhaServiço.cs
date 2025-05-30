@@ -7,18 +7,18 @@ using MailKit.Net.Smtp;
 
 namespace WebApplicationCarbono.Serviços
 {
-    public class RedefinicaoSenhaServico : IRedefinicaoSenha
+    public class RedefinicaoSenhaServiço : IRedefinicaoSenha
     {
         private readonly string _stringConexao;
         private readonly IConfiguration _configuracao;
 
-        public RedefinicaoSenhaServico(IConfiguration configuracao)
+        public RedefinicaoSenhaServiço(IConfiguration configuracao)
         {
             _configuracao = configuracao;
             _stringConexao = configuracao.GetConnectionString("DefaultConnection");
         }
 
-        public void EnviarEmailRedefinicao(ResetSenhaRequestDto dto)
+        public void EnviarEmailRedefinicao(EditarSenhaRequestDto dto)
         {
             string token = GerarToken();
 

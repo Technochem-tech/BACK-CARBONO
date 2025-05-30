@@ -4,7 +4,7 @@ namespace WebApplicationCarbono.Interface
 {
     public interface IRedefinicaoSenha
     {
-        void EnviarEmailRedefinicao(ResetSenhaRequestDto dto);
+        void EnviarEmailRedefinicao(EditarSenhaRequestDto dto);
         bool ValidarToken (string token);
         void AtualizarSenha (string token, string senha);
 

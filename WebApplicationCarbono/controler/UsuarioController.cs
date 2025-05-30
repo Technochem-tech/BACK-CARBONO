@@ -33,6 +33,7 @@ namespace WebApplicationCarbono.controler
             return Ok(usuario);
         }
 
+
         [HttpPost("Cadastrar")]
         public IActionResult Cadastrar([FromBody] CadastroUsuarioDto cadastroUsuarioDto)
 
@@ -48,27 +49,79 @@ namespace WebApplicationCarbono.controler
             }
 
         }
+
         [Authorize]
         [HttpPut("EditarTelefone")]
         public IActionResult Editar([FromQuery] int id, [FromBody] EditarTelefoneUsuarioDto dto)
         {
-            _usuarioServiços.EditarTelefone(id, dto);
-            return Ok(new { mensagem = "Telefone atualizado com sucesso!" });
+            try
+            {
+                _usuarioServiços.EditarTelefone(id, dto);
+                return Ok(new { mensagem = "Telefone atualizado com sucesso!" });
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(new { mensagem = ex.Message });
+            }
         }
+
+
+
+
         [Authorize]
-        [HttpPost("upload-imagem")]
-        public IActionResult UploadImagem(int idUsuario, [FromForm] ImagemUsuarioDto dto)
+        [HttpGet("Buscar-imagem/{idUsuario}")]
+        public IActionResult ObterImagem( int idUsuario)
         {
             try
             {
-                _usuarioServiços.SalvarImagemUsuario(idUsuario, dto.Imagem);
-                return Ok(new { mensagem = "Imagem salva com sucesso!" });
+                var imagemBytes = _usuarioServiços.BuscarImagemUsuario(idUsuario);
+                return File(imagemBytes, "image/jpeg");
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(new { mensagem = ex.Message });
+            }
+            
+
+        }
+
+
+
+        [Authorize]
+        [HttpPut("SalvarOuAtualizarImagem")]
+        public IActionResult UpsertImagem(int idUsuario, [FromForm] AtualizarImgUsuarioDto dto)
+        {
+            try
+            {
+                _usuarioServiços.SalvarOuAtualizarImagem(idUsuario, dto.Imagem);
+                return Ok(new { mensagem = "Imagem Atualizada sucesso!" });
             }
             catch (Exception ex)
             {
                 return BadRequest(new { mensagem = ex.Message });
             }
         }
+
+        [Authorize]
+        [HttpDelete("Deletar-imagem/{idUsuario}")]
+        public IActionResult DeletarImagem(int idUsuario)
+        {
+            try
+            {
+                _usuarioServiços.DeletarImagemUsuario(idUsuario);
+                return Ok(new { mensagem = "imagem deletada com sucesso!" });
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(new { mensagem = ex.Message });
+            }
+
+        }
+        
+
 
     }
 }

@@ -17,6 +17,8 @@ namespace WebApplicationCarbono.Serviços
             _stringConexao = configuration.GetConnectionString("DefaultConnection");
         }
 
+        
+
         public void CadastrarUsuario(CadastroUsuarioDto cadastroUsuarioDto)
         {
             try
@@ -25,7 +27,7 @@ namespace WebApplicationCarbono.Serviços
                 {
                     conexao.Open();
 
-                    // Gera hash seguro da senha com salt interno
+                    
                     string senhaHash = BCrypt.Net.BCrypt.HashPassword(cadastroUsuarioDto.Senha);
 
                     string query = @"
@@ -111,7 +113,26 @@ namespace WebApplicationCarbono.Serviços
             return usuario;
         }
 
-        public void SalvarImagemUsuario(int idUsuario, IFormFile imagem)
+      
+
+        public byte[] BuscarImagemUsuario(int idUsuario)
+        {
+            using var conexao = new NpgsqlConnection(_stringConexao); 
+            conexao.Open();
+
+            var comado = new NpgsqlCommand("SELECT img_usuario FROM usuarios WHERE id = @Id", conexao);
+            comado.Parameters.AddWithValue("@Id", idUsuario);
+            var resultado = comado.ExecuteScalar();
+
+            if (resultado == DBNull.Value || resultado == null)
+            {
+                throw new Exception("Imagem não encontrada.");
+            }
+
+            return (byte[])resultado;
+        }
+
+        public void SalvarOuAtualizarImagem(int idUsuario, IFormFile imagem)
         {
             using var conexao = new NpgsqlConnection(_stringConexao);
             conexao.Open();
@@ -129,6 +150,34 @@ namespace WebApplicationCarbono.Serviços
             {
                 throw new Exception("Usuário não encontrado.");
             }
+
+
+        }
+
+        public void DeletarImagemUsuario(int idUsuario)
+        {
+            using var conexao = new NpgsqlConnection( _stringConexao);
+            conexao.Open();
+
+            var comandoSelect = new NpgsqlCommand("SELECT img_usuario FROM usuarios WHERE id = @Id", conexao);
+            comandoSelect.Parameters.AddWithValue("@Id", idUsuario);
+
+            var resultado = comandoSelect.ExecuteScalar();
+
+            if (resultado == null)
+            {
+                throw new Exception("Usuário não encontrado.");
+            }
+
+            if (resultado == DBNull.Value)
+            {
+                throw new Exception("Nenhuma imagem para deletar.");
+            }
+
+            var comandoUpdate = new NpgsqlCommand("UPDATE usuarios SET img_usuario = NULL WHERE id = @Id", conexao);
+            comandoUpdate.Parameters.AddWithValue("@Id", idUsuario);
+            comandoUpdate.ExecuteNonQuery();
+
         }
     }
 }

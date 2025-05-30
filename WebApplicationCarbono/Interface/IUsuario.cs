@@ -8,6 +8,8 @@ namespace WebApplicationCarbono.Interface
         BuscarUsuario GetUsuario(int IdUsuario);
         void CadastrarUsuario(CadastroUsuarioDto cadastroUsuarioDto);
         void EditarTelefone(int id, EditarTelefoneUsuarioDto dto);
-        void SalvarImagemUsuario (int idUsuario, IFormFile imagem);
+        byte[] BuscarImagemUsuario(int idUsuario);
+        void SalvarOuAtualizarImagem(int idUsuario, IFormFile imagem);
+        void DeletarImagemUsuario (int idUsuario);
     }
 }
