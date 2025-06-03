@@ -1,6 +1,6 @@
 ﻿namespace WebApplicationCarbono.Modelos
 {
-    public class BuscarUsuario
+    public class BuscarUsuarioModelo
     {
         public int codigoCadastro { get; set; }
         public string Nome { get; set; }

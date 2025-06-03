@@ -72,9 +72,9 @@ namespace WebApplicationCarbono.Serviços
 
         }
 
-        public BuscarUsuario GetUsuario(int IdUsuario)
+        public BuscarUsuarioModelo GetUsuario(int IdUsuario)
         {
-            BuscarUsuario usuario = null;
+            BuscarUsuarioModelo usuario = null;
 
             try
             {
@@ -91,7 +91,7 @@ namespace WebApplicationCarbono.Serviços
                         {
                             if (reader.Read())
                             {
-                                usuario = new BuscarUsuario
+                                usuario = new BuscarUsuarioModelo
                                 {
                                     codigoCadastro = reader.GetInt32(reader.GetOrdinal("id")),
                                     Nome = reader.GetString(reader.GetOrdinal("nome")),

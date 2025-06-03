@@ -21,7 +21,7 @@ namespace WebApplicationCarbono.controler
 
         [Authorize]
         [HttpGet("ConsultarUsuario{id}")]
-        public ActionResult<BuscarUsuario> GetUsuario(int id)
+        public ActionResult<BuscarUsuarioModelo> GetUsuario(int id)
         {
             var usuario = _usuarioServiços.GetUsuario(id);
 

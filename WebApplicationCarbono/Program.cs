@@ -27,6 +27,7 @@ builder.Services.AddScoped<IUsuario, UsuarioServiço>();
 builder.Services.AddScoped<IAutenticacao, AutenticacaoServiço>();
 builder.Services.AddScoped<IPagamento, PagamentoServiço>();
 builder.Services.AddScoped<IRedefinicaoSenha, RedefinicaoSenhaServiço>();
+builder.Services.AddScoped<ITransferencia, TransferenciaServiço>();
 
 var app = builder.Build();
 
