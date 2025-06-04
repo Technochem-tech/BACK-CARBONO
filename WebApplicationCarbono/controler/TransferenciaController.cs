@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using WebApplicationCarbono.Interface;
+using WebApplicationCarbono.Modelos;
 
 namespace WebApplicationCarbono.controler
 {
@@ -30,7 +31,21 @@ namespace WebApplicationCarbono.controler
 
                return NotFound(new {mensagem = ex.Message});
             }
+            
         }
 
+        [HttpPost("confirmar")]
+        public IActionResult ConfirmarTransferencia([FromBody] TransferenciaModelo transferencia)
+        {
+            try
+            {
+                var mensagem = _serviço.RealizarTransferencia(transferencia);
+                return Ok(new { mensagem });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { erro = ex.Message });
+            }
+        }
     }
 }
