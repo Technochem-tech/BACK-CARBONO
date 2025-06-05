@@ -67,29 +67,34 @@ namespace WebApplicationCarbono.Serviços
                     // Buscar destinatário
                     var comandoBusca = new NpgsqlCommand("SELECT id FROM usuarios WHERE email = @valor OR cnpj = @valor", conexao);
                     comandoBusca.Parameters.AddWithValue("valor", transferencia.DestinatarioEmailOuCnpj);
-                    var reader = comandoBusca.ExecuteReader();
+                    var leitor = comandoBusca.ExecuteReader();
 
-                    if (reader.Read())
+                    if (leitor.Read())
                     {
-                        destinatarioId = reader.GetInt32(0);
-                        reader.Close();
+                        destinatarioId = leitor.GetInt32(0);
+                        leitor.Close();
                     }
                     else
                     {
-                        reader.Close();
-                        throw new Exception("Destinatário inválido.");
+                        leitor.Close();
+                        return "Destinatário inválido.";
+                    }
+
+                    if (destinatarioId == transferencia.RemetenteId)
+                    {
+                        return "Não é possível realizar transferência para você mesmo.";        
                     }
 
 
 
-                // Verifica saldo
-                var VerificarSaldo = new NpgsqlCommand("SELECT creditos_carbono FROM saldos WHERE id_usuario = @id", conexao);
+                    // Verifica saldo
+                    var VerificarSaldo = new NpgsqlCommand("SELECT creditos_carbono FROM saldos WHERE id_usuario = @id", conexao);
                     VerificarSaldo.Parameters.AddWithValue("id", transferencia.RemetenteId);
                     var saldoAtual = (decimal?)VerificarSaldo.ExecuteScalar();
 
                     if (saldoAtual == null || saldoAtual < transferencia.QuantidadeCredito)
                     {
-                          return "Saldo insuficiente para realizar a transferência.";
+                        return "Saldo insuficiente para realizar a transferência.";
                     }
 
 

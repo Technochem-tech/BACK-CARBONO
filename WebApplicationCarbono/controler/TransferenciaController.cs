@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using WebApplicationCarbono.Dtos;
 using WebApplicationCarbono.Interface;
 using WebApplicationCarbono.Modelos;
 
@@ -34,11 +36,28 @@ namespace WebApplicationCarbono.controler
             
         }
 
+        [Authorize]
         [HttpPost("confirmar")]
-        public IActionResult ConfirmarTransferencia([FromBody] TransferenciaModelo transferencia)
+        public IActionResult ConfirmarTransferencia([FromBody] TransferenciaDto dto)
         {
             try
             {
+                var infoUsuarioToken = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (infoUsuarioToken == null)
+                {
+                    return Unauthorized(new { erro = "Usuário não autenticado corretamente." });
+                }
+
+                var remetenteId = int.Parse(infoUsuarioToken.Value);
+
+                var transferencia = new TransferenciaModelo
+                {
+                    RemetenteId = remetenteId,
+                    DestinatarioEmailOuCnpj = dto.DestinatarioEmailOuCnpj,
+                    QuantidadeCredito = dto.QuantidadeCredito
+
+                };
+
                 var mensagem = _serviço.RealizarTransferencia(transferencia);
                 return Ok(new { mensagem });
             }
@@ -46,6 +65,8 @@ namespace WebApplicationCarbono.controler
             {
                 return BadRequest(new { erro = ex.Message });
             }
+           
+            
         }
     }
 }
