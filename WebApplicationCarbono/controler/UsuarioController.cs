@@ -5,6 +5,7 @@ using WebApplicationCarbono.Dtos;
 using WebApplicationCarbono.Interface;
 using WebApplicationCarbono.Modelos;
 using WebApplicationCarbono.Serviços;
+using WebApplicationCarbono.Helpers;    
 
 namespace WebApplicationCarbono.controler
 {
@@ -52,11 +53,17 @@ namespace WebApplicationCarbono.controler
 
         [Authorize]
         [HttpPut("EditarTelefone")]
-        public IActionResult Editar([FromQuery] int id, [FromBody] EditarTelefoneUsuarioDto dto)
+        public IActionResult Editar( [FromBody] EditarTelefoneUsuarioDto dto)
         {
             try
-            {
-                _usuarioServiços.EditarTelefone(id, dto);
+            {   // o metódo (ObterIdUsuarioLogado) obtém o ID do usuário pelo o tokem Jtw e, insere automaticamente ao IdUsuario junto ao dto
+                var idUsuario = UserHelper.ObterIdUsuarioLogado(HttpContext);
+                if (idUsuario <= 0)
+                {
+                    return Unauthorized(new { mensagem = "Usuário não autenticado." });
+                }
+
+                _usuarioServiços.EditarTelefone(idUsuario, dto);
                 return Ok(new { mensagem = "Telefone atualizado com sucesso!" });
             }
             catch (Exception ex)
@@ -70,11 +77,17 @@ namespace WebApplicationCarbono.controler
 
 
         [Authorize]
-        [HttpGet("Buscar-imagem/{idUsuario}")]
-        public IActionResult ObterImagem( int idUsuario)
+        [HttpGet("Buscar-imagem")]
+        public IActionResult ObterImagem()
         {
             try
-            {
+            {   // o metódo (ObterIdUsuarioLogado) obtém o ID do usuário pelo o tokem Jtw e, insere automaticamente ao IdUsuario
+                var idUsuario = Helpers.UserHelper.ObterIdUsuarioLogado(HttpContext);
+                if (idUsuario <= 0)
+                {
+                    return Unauthorized(new { mensagem = "Usuário não autenticado." });
+                }
+
                 var imagemBytes = _usuarioServiços.BuscarImagemUsuario(idUsuario);
                 return File(imagemBytes, "image/jpeg");
             }
@@ -91,12 +104,19 @@ namespace WebApplicationCarbono.controler
 
         [Authorize]
         [HttpPut("SalvarOuAtualizarImagem")]
-        public IActionResult UpsertImagem(int idUsuario, [FromForm] AtualizarImgUsuarioDto dto)
+        public IActionResult UpsertImagem([FromForm] AtualizarImgUsuarioDto dto)
         {
             try
-            {
+            {   // o metódo (ObterIdUsuarioLogado) obtém o ID do usuário pelo o tokem Jtw e, insere automaticamente ao IdUsuario.
+                var idUsuario = Helpers.UserHelper.ObterIdUsuarioLogado(HttpContext);
+                if (idUsuario <= 0)
+                {
+                    return Unauthorized(new { mensagem = "Usuário não autenticado." });
+                }
+
                 _usuarioServiços.SalvarOuAtualizarImagem(idUsuario, dto.Imagem);
                 return Ok(new { mensagem = "Imagem Atualizada sucesso!" });
+
             }
             catch (Exception ex)
             {
@@ -105,12 +125,18 @@ namespace WebApplicationCarbono.controler
         }
 
         [Authorize]
-        [HttpDelete("Deletar-imagem/{idUsuario}")]
-        public IActionResult DeletarImagem(int idUsuario)
+        [HttpDelete("Deletar-imagem")]
+        public IActionResult DeletarImagem()
         {
             try
-            {
-                _usuarioServiços.DeletarImagemUsuario(idUsuario);
+            {   // o metódo (ObterIdUsuarioLogado) obtém o ID do usuário pelo o tokem Jtw e, insere automaticamente ao IdUsuario. 
+                var IdUsuario = Helpers.UserHelper.ObterIdUsuarioLogado(HttpContext);
+                if (IdUsuario <= 0)
+                {
+                    return Unauthorized(new { mensagem = "Usuário não autenticado." });
+                }
+
+                _usuarioServiços.DeletarImagemUsuario(IdUsuario);
                 return Ok(new { mensagem = "imagem deletada com sucesso!" });
             }
             catch (Exception ex)

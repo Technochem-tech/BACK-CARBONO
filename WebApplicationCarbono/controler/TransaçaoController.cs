@@ -19,10 +19,15 @@ namespace WebApplicationCarbono.controler
         }
 
         [HttpGet("ConsultarHistorico")]
-        public IActionResult Get([FromQuery] int idUsuario)
+        public IActionResult ConsultarHistorico()
         {
             try
-            {
+            {   var idUsuario = Helpers.UserHelper.ObterIdUsuarioLogado(HttpContext);
+                if (idUsuario == 0)
+                {
+                    return Unauthorized(new { erro = "Usuário não autenticado corretamente." });
+                }
+
                 var historico = _trasaçaoServiços.ConsultarHistorico(idUsuario);
                 return Ok(new { historicodetransacao = historico });
             }

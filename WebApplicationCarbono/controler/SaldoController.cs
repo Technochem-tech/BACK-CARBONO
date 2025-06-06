@@ -19,12 +19,17 @@ namespace WebApplicationCarbono.controler
             _saldoServiços = SaldoServiços;
         }
 
-        [HttpGet("GetSaldo/{IdUsuario}")]
-        public IActionResult GetSaldo (int IdUsuario)
+        [HttpGet("GetSaldo/")]
+        public IActionResult GetSaldo ()
         {
             try
-            {
-                var saldo = _saldoServiços.GetSaldo(IdUsuario);
+            {   var idUsuario = Helpers.UserHelper.ObterIdUsuarioLogado(HttpContext);
+                if (idUsuario == 0)
+                {
+                    return Unauthorized(new { erro = "Usuário não autenticado corretamente." });
+                }
+
+                var saldo = _saldoServiços.GetSaldo(idUsuario);
                 return Ok(new {saldoemconta =  saldo});
             }
             catch (Exception ex)

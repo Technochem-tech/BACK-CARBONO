@@ -19,7 +19,7 @@ namespace WebApplicationCarbono.controler
             _serviço = serviço;
         }
 
-
+        [Authorize]
         [HttpGet("verificar-destinatario")]
         public IActionResult VerificarDestinatario([FromQuery] string emailOuCnpj)
         {
