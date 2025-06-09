@@ -6,5 +6,6 @@ namespace WebApplicationCarbono.Interface
     {
         object VerificarDestinatario(string emailOuCnpj);
         string RealizarTransferencia(TransferenciaModelo transferencia);
+        string RealizarTransferenciaSaldo(TransferenciaModeloSaldo transferenciaSaldo);
     }
 }

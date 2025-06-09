@@ -31,9 +31,9 @@ namespace WebApplicationCarbono.controler
             catch (Exception ex)
             {
 
-               return NotFound(new {mensagem = ex.Message});
+                return NotFound(new { mensagem = ex.Message });
             }
-            
+
         }
 
         [Authorize]
@@ -65,8 +65,41 @@ namespace WebApplicationCarbono.controler
             {
                 return BadRequest(new { erro = ex.Message });
             }
-           
-            
+
+
+        }
+
+        [Authorize]
+        [HttpPost("confirmarSaldo")]
+        public IActionResult ConfirmarTransferenciaSaldo([FromBody] TransferenciaSaldoDto dto)
+        {
+            try
+            {
+                var infoUsuarioToken = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (infoUsuarioToken == null)
+                {
+                    return Unauthorized(new { erro = "Usuário não autenticado corretamente." });
+                }
+
+                var remetenteId = int.Parse(infoUsuarioToken.Value);
+
+                var transferencia = new TransferenciaModeloSaldo
+                {
+                    RemetenteId = remetenteId,
+                    DestinatarioEmailOuCnpj = dto.DestinatarioEmailOuCnpj,
+                    QuantidadeSaldo = dto.QuantidadeSaldo
+
+                };
+
+                var mensagem = _serviço.RealizarTransferenciaSaldo(transferencia);
+                return Ok(new { mensagem });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { erro = ex.Message });
+            }
+
+
         }
     }
 }
