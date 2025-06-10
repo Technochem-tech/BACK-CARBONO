@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using System.Drawing;
 using WebApplicationCarbono.Interface;
 using WebApplicationCarbono.Modelos;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
@@ -14,9 +15,9 @@ namespace WebApplicationCarbono.Serviços
             _stringConexao = configuaração.GetConnectionString("DefaultConnection");
         }
 
-        
 
-       
+
+
         public decimal GetSaldo(int IdUsuario)
         {
             decimal saldoEmConta = 0.00m;
@@ -27,19 +28,11 @@ namespace WebApplicationCarbono.Serviços
                 {
                     conexao.Open();
 
-                    var consulta = "SELECT * FROM saldos WHERE id_usuario = @IdUsuario";
-                    using (var comando = new NpgsqlCommand(consulta, conexao))
-                    {
-                        comando.Parameters.AddWithValue("IdUsuario", IdUsuario);
-
-                        using (var consultaSaldo = comando.ExecuteReader())
-                        {
-                            if (consultaSaldo.Read())
-                            {
-                                saldoEmConta = consultaSaldo.GetDecimal(consultaSaldo.GetOrdinal("saldo"));
-                            }
-                        }
-                    }
+                    var comando = new NpgsqlCommand(
+                    "SELECT COALESCE(SUM(valor), 0) FROM saldo_usuarios_dinamica WHERE usuario_id = @usuarioId", conexao);
+                    comando.Parameters.AddWithValue("usuarioId", IdUsuario);
+                    var saldo = (decimal)comando.ExecuteScalar();
+                    return saldoEmConta = saldo;
                 }
 
 
@@ -49,12 +42,12 @@ namespace WebApplicationCarbono.Serviços
 
                 throw new Exception("Erro ao buscar o saldo: " + ex.Message);
             }
-            return saldoEmConta;
+
 
         }
 
-       
 
-        
+
+
     }
 }

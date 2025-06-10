@@ -12,5 +12,6 @@
         // usado no TransferenciaController, pq o id do rementente já é passado automaticamente pelo token.
         public string DestinatarioEmailOuCnpj { get; set; }
         public decimal QuantidadeSaldo { get; set; }
+        public string Descricao { get; set; }
     }
 }

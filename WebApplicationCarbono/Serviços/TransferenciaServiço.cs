@@ -49,74 +49,34 @@ namespace WebApplicationCarbono.Serviços
             using var transacao = conexao.BeginTransaction();
 
             int destinatarioId = 0;
-
-            try
-            {
-                destinatarioId = ObterDestinatarioId(conexao, transferencia.DestinatarioEmailOuCnpj);
-                if (destinatarioId == 0)
-                {
-                    return "Destinatário não encontrado.";
-                }
+            return "ok";
 
 
-                if (destinatarioId == transferencia.RemetenteId)
-                    return "Não é possível realizar transferência para você mesmo.";
 
-                if (!VerficarCredito(conexao, transferencia.RemetenteId, transferencia.QuantidadeCredito))
-                    return "Saldo insuficiente para realizar a transferência.";
-
-                DebitarCredito(conexao, transferencia.RemetenteId, transferencia.QuantidadeCredito);
-                CreditarCredito(conexao, destinatarioId, transferencia.QuantidadeCredito);
-
-                RegistrarTransacao(conexao, transferencia.RemetenteId, destinatarioId, transferencia.QuantidadeCredito, "Transferência de créditos realizada com sucesso");
-                RegistrarTransacao(conexao, destinatarioId, transferencia.RemetenteId, transferencia.QuantidadeCredito, "Transferência de créditos recebida com sucesso");
-
-                transacao.Commit();
-                return "Transferência realizada com sucesso.";
-            }
-            catch (Exception ex)
-            {
-                transacao.Rollback();
-                RegistrarTransacao(conexao, transferencia.RemetenteId, destinatarioId, transferencia.QuantidadeCredito, "Erro ao realizar transferência: " + ex.Message, "erro");
-                return "Erro ao realizar a transferência: " + ex.Message;
-            }
         }
 
-        public string RealizarTransferenciaSaldo(TransferenciaModeloSaldo transferenciaSaldo)
+        // Método principal para realizar transferência de saldo
+        public string RealizarTransferenciaSaldo(TransferenciaModeloSaldo transferencia)
         {
-            if (transferenciaSaldo.QuantidadeSaldo <= 0)
-            {
-                return "O valor a transferir deve ser maior que zero.";
-            }
-
             using var conexao = new NpgsqlConnection(_conexao);
             conexao.Open();
             using var transacao = conexao.BeginTransaction();
 
-            int destinatarioId = 0;
-            
-
             try
             {
-                destinatarioId = ObterDestinatarioId(conexao, transferenciaSaldo.DestinatarioEmailOuCnpj);
-                if (destinatarioId == 0)
-                {
-                    return "Destinatário não encontrado.";
-                }
+                int DestinatarioId = ObterDestinatarioId(conexao, transferencia.DestinatarioEmailOuCnpj);
 
+                // Verifica saldo do remetente
+                if (!TemSaldoSuficiente(conexao, transferencia.RemetenteId, transferencia.QuantidadeSaldo))
+                    return "Saldo insuficiente para transferência.";
 
+                // Debita do remetente (registro de saída)
+                RegistrarMovimentacao(conexao, transferencia.RemetenteId, "saida", "transferencia", -transferencia.QuantidadeSaldo,
+                    $"Transferência para usuário {DestinatarioId}: {transferencia.Descricao}");
 
-                if (destinatarioId == transferenciaSaldo.RemetenteId)
-                    return "Não é possível realizar transferência para você mesmo.";
-
-                if (!VerficarSaldo(conexao, transferenciaSaldo.RemetenteId, transferenciaSaldo.QuantidadeSaldo))
-                    return "Saldo insuficiente para realizar a transferência.";
-
-                DebitarSaldo(conexao, transferenciaSaldo.RemetenteId, transferenciaSaldo.QuantidadeSaldo);
-                CreditarSaldo(conexao, destinatarioId, transferenciaSaldo.QuantidadeSaldo);
-
-                RegistrarTransacao(conexao, transferenciaSaldo.RemetenteId, destinatarioId, transferenciaSaldo.QuantidadeSaldo, "Transferência de saldo realizada com sucesso");
-                RegistrarTransacao(conexao, destinatarioId, transferenciaSaldo.RemetenteId, transferenciaSaldo.QuantidadeSaldo, "Transferência de saldo recebida com sucesso");
+                // Credita para o destinatário (registro de entrada)
+                RegistrarMovimentacao(conexao, DestinatarioId, "entrada", "transferencia", transferencia.QuantidadeSaldo,
+                    $"Transferência recebida do usuário {transferencia.RemetenteId}: {transferencia.Descricao}");
 
                 transacao.Commit();
                 return "Transferência realizada com sucesso.";
@@ -124,123 +84,51 @@ namespace WebApplicationCarbono.Serviços
             catch (Exception ex)
             {
                 transacao.Rollback();
-                RegistrarTransacao(conexao, transferenciaSaldo.RemetenteId, destinatarioId, transferenciaSaldo.QuantidadeSaldo, "Erro ao realizar transferência: " + ex.Message, "erro");
-                return "Erro ao realizar a transferência: " + ex.Message;
+                return "Erro na transferência: " + ex.Message;
             }
         }
 
-        // Métodos auxiliares
+        // Verifica se usuário tem saldo suficiente
+        private bool TemSaldoSuficiente(NpgsqlConnection conexao, int usuarioId, decimal valor)
+        {
+            var comando = new NpgsqlCommand(
+                "SELECT COALESCE(SUM(valor), 0) FROM saldo_usuarios_dinamica WHERE usuario_id = @usuarioId", conexao);
+            comando.Parameters.AddWithValue("usuarioId", usuarioId);
+            var saldo = (decimal)comando.ExecuteScalar();
+            return saldo >= valor;
+        }
+
+        // Registra uma movimentação na tabela
+        private void RegistrarMovimentacao(NpgsqlConnection conexao, int usuarioId, string tipo, string categoria, decimal valor, string descricao)
+        {
+            var comando = new NpgsqlCommand(@"
+            INSERT INTO saldo_usuarios_dinamica (usuario_id, tipo, categoria, valor, descricao) 
+            VALUES (@usuarioId, @tipo, @categoria, @valor, @descricao)", conexao);
+            comando.Parameters.AddWithValue("usuarioId", usuarioId);
+            comando.Parameters.AddWithValue("tipo", tipo);
+            comando.Parameters.AddWithValue("categoria", categoria);
+            comando.Parameters.AddWithValue("valor", valor);
+            comando.Parameters.AddWithValue("descricao", descricao ?? "");
+            comando.ExecuteNonQuery();
+        }
 
         private int ObterDestinatarioId(NpgsqlConnection conexao, string emailOUCnpj)
         {
-            var ComandoBusca = new NpgsqlCommand("SELECT id FROM usuarios WHERE email = @valor OR cnpj = @valor", conexao);
-            ComandoBusca.Parameters.AddWithValue("valor", emailOUCnpj);
-            var leitor = ComandoBusca.ExecuteReader();
-            if (leitor.Read())
-            {
-                int id = leitor.GetInt32(0);
-                leitor.Close();
-                return id;
-            }
-            else
-            {
+           
+            var query = "SELECT id FROM usuarios WHERE email = @valor OR cnpj = @valor";
+            using var comando = new NpgsqlCommand(query, conexao);
+            comando.Parameters.AddWithValue("valor", emailOUCnpj);
 
-                int id = 0; 
-                return id = 0;
+            var resultado = comando.ExecuteScalar();
+            if (resultado != null)
+            {
+                return (int)resultado;
             }
 
+            throw new Exception("Destinatário não encontrado.");
         }
 
-
-        private bool VerficarCredito(NpgsqlConnection conexao, int remetenteId, decimal quantidadeCredito)
-        {
-            var comando = new NpgsqlCommand("SELECT creditos_carbono FROM saldos WHERE id_usuario = @id", conexao);
-            comando.Parameters.AddWithValue("id", remetenteId);
-            var saldo = (decimal?)comando.ExecuteScalar();
-            return saldo != null && saldo >= quantidadeCredito;
-        }
-
-        private void DebitarCredito(NpgsqlConnection conexao, int remetenteId, decimal quantidade)
-        {
-            var comando = new NpgsqlCommand("UPDATE saldos SET creditos_carbono = creditos_carbono - @qtd WHERE id_usuario = @id", conexao);
-            comando.Parameters.AddWithValue("qtd", quantidade);
-            comando.Parameters.AddWithValue("id", remetenteId);
-            comando.ExecuteNonQuery();
-        }
-
-        private void CreditarCredito(NpgsqlConnection conexao, int destinatarioId, decimal quantidade)
-        {
-            var verifica = new NpgsqlCommand("SELECT COUNT(*) FROM saldos WHERE id_usuario = @id", conexao);
-            verifica.Parameters.AddWithValue("id", destinatarioId);
-            var existe = (long)verifica.ExecuteScalar();
-
-            if (existe == 0)
-            {
-                var inserir = new NpgsqlCommand("INSERT INTO saldos (id_usuario, saldo, creditos_carbono) VALUES (@id, 0, @qtd)", conexao);
-                inserir.Parameters.AddWithValue("id", destinatarioId);
-                inserir.Parameters.AddWithValue("qtd", quantidade);
-                inserir.ExecuteNonQuery();
-            }
-            else
-            {
-                var atualizar = new NpgsqlCommand("UPDATE saldos SET creditos_carbono = creditos_carbono + @qtd WHERE id_usuario = @id", conexao);
-                atualizar.Parameters.AddWithValue("qtd", quantidade);
-                atualizar.Parameters.AddWithValue("id", destinatarioId);
-                atualizar.ExecuteNonQuery();
-            }
-        }
-
-        private bool VerficarSaldo(NpgsqlConnection conexao, int remetenteId, decimal quantidadeSaldo)
-        {
-            var comando = new NpgsqlCommand("SELECT saldo FROM saldos WHERE id_usuario = @id", conexao);
-            comando.Parameters.AddWithValue("id", remetenteId);
-            var saldo = (decimal?)comando.ExecuteScalar();
-            return saldo != null && saldo >= quantidadeSaldo;
-        }
-
-        private void DebitarSaldo(NpgsqlConnection conexao, int remetenteId, decimal quantidade)
-        {
-            var comando = new NpgsqlCommand("UPDATE saldos SET saldo = saldo - @qtd WHERE id_usuario = @id", conexao);
-            comando.Parameters.AddWithValue("qtd", quantidade);
-            comando.Parameters.AddWithValue("id", remetenteId);
-            comando.ExecuteNonQuery();
-        }
-
-        private void CreditarSaldo(NpgsqlConnection conexao, int destinatarioId, decimal quantidade)
-        {
-            var verifica = new NpgsqlCommand("SELECT COUNT(*) FROM saldos WHERE id_usuario = @id", conexao);
-            verifica.Parameters.AddWithValue("id", destinatarioId);
-            var existe = (long)verifica.ExecuteScalar();
-
-            if (existe == 0)
-            {
-                var inserir = new NpgsqlCommand("INSERT INTO saldos (id_usuario, saldo, creditos_carbono) VALUES (@id, @qtd, 0)", conexao);
-                inserir.Parameters.AddWithValue("id", destinatarioId);
-                inserir.Parameters.AddWithValue("qtd", quantidade);
-                inserir.ExecuteNonQuery();
-            }
-            else
-            {
-                var atualizar = new NpgsqlCommand("UPDATE saldos SET saldo = saldo + @qtd WHERE id_usuario = @id", conexao);
-                atualizar.Parameters.AddWithValue("qtd", quantidade);
-                atualizar.Parameters.AddWithValue("id", destinatarioId);
-                atualizar.ExecuteNonQuery();
-            }
-        }
-
-        private void RegistrarTransacao(NpgsqlConnection conexao, int remetenteId, int destinatarioId, decimal quantidade, string descricao, string status = "concluido")
-        {
-            var comando = new NpgsqlCommand(@"
-                INSERT INTO transacoes
-                (data, descricao, tipo, quantidade, valor, id_usuario, id_destinatario, status)
-                VALUES (NOW(), @desc, 'transferencia', 0, @qtd, @remetente, @destinatario, @status)", conexao);
-
-            comando.Parameters.AddWithValue("desc", descricao);
-            comando.Parameters.AddWithValue("qtd", quantidade);
-            comando.Parameters.AddWithValue("remetente", remetenteId);
-            comando.Parameters.AddWithValue("destinatario", destinatarioId);
-            comando.Parameters.AddWithValue("status", status);
-            comando.ExecuteNonQuery();
-        }
     }
+
+
 }

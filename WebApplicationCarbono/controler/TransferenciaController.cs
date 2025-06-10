@@ -87,7 +87,8 @@ namespace WebApplicationCarbono.controler
                 {
                     RemetenteId = remetenteId,
                     DestinatarioEmailOuCnpj = dto.DestinatarioEmailOuCnpj,
-                    QuantidadeSaldo = dto.QuantidadeSaldo
+                    QuantidadeSaldo = dto.QuantidadeSaldo,
+                    Descricao = dto.Descricao
 
                 };
 

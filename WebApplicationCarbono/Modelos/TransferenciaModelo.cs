@@ -12,5 +12,6 @@
         public int RemetenteId { get; set; }
         public string DestinatarioEmailOuCnpj { get; set; }
         public decimal QuantidadeSaldo { get; set; }
+        public string Descricao { get; set; }
     }
 }
