@@ -1,6 +1,6 @@
 ﻿namespace WebApplicationCarbono.Dtos
 {
-    public class TransferenciaDto
+    public class TransferenciaCreditoDto
     {
       
         public string DestinatarioEmailOuCnpj { get; set; }

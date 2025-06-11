@@ -7,7 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Lê o accessToken da configuração
 var mercadoPagoSettings = builder.Configuration.GetSection("MercadoPago").Get<MercadoPagoSettings>();
-MercadoPagoConfig.AccessToken = mercadoPagoSettings.AccessToken;
+MercadoPagoConfig.AccessToken = mercadoPagoSettings.AccessToken; 
+
 
 
 // JWT e Swagger
@@ -29,6 +30,7 @@ builder.Services.AddScoped<IPagamento, PagamentoServico>();
 builder.Services.AddScoped<IRedefinicaoSenha, RedefinicaoSenhaServiço>();
 builder.Services.AddScoped<ITransferirCredito, TransferirCreditoServiço>();
 builder.Services.AddScoped<ICompraCreditos, CompraCreditosServico>();
+builder.Services.AddScoped<IVendaCredito, VendaCreditoServico> ();  
 builder.Services.AddScoped<PagamentoServico>();
 
 

@@ -38,7 +38,7 @@ namespace WebApplicationCarbono.controler
 
         [Authorize]
         [HttpPost("confirmarTransferenciaCredito")]
-        public IActionResult ConfirmarTransferenciaSaldo([FromBody] TransferenciaDto dto)
+        public IActionResult ConfirmarTransferenciaSaldo([FromBody] TransferenciaCreditoDto dto)
         {
             try
             {
