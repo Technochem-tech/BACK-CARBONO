@@ -12,5 +12,14 @@ namespace WebApplicationCarbono.Helpers
 
             return int.Parse(claim.Value);
         }
+
+        public static string ObterEmailUsuarioLogado(HttpContext httpContext)
+        {
+            var claim = httpContext.User.FindFirst(ClaimTypes.Email);
+            if (claim == null)
+                throw new UnauthorizedAccessException("Usuário não autenticado.");
+
+            return claim.Value;
+        }
     }
 }

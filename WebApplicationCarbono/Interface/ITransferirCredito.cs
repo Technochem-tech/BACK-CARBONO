@@ -2,10 +2,9 @@
 
 namespace WebApplicationCarbono.Interface
 {
-    public interface ITransferencia
+    public interface ITransferirCredito
     {
         object VerificarDestinatario(string emailOuCnpj);
         string RealizarTransferencia(TransferenciaModelo transferencia);
-        string RealizarTransferenciaSaldo(TransferenciaModeloSaldo transferencia);
     }
 }

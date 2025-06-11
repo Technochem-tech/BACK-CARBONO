@@ -25,9 +25,12 @@ builder.Services.AddScoped<IProjetos, ProjetosServiço>();
 builder.Services.AddScoped<ITransaçao, TransacaoServiço>();
 builder.Services.AddScoped<IUsuario, UsuarioServiço>();
 builder.Services.AddScoped<IAutenticacao, AutenticacaoServiço>();
-builder.Services.AddScoped<IPagamento, PagamentoServiço>();
+builder.Services.AddScoped<IPagamento, PagamentoServico>();
 builder.Services.AddScoped<IRedefinicaoSenha, RedefinicaoSenhaServiço>();
-builder.Services.AddScoped<ITransferencia, TransferenciaServiço>();
+builder.Services.AddScoped<ITransferirCredito, TransferirCreditoServiço>();
+builder.Services.AddScoped<ICompraCreditos, CompraCreditosServico>();
+builder.Services.AddScoped<PagamentoServico>();
+
 
 var app = builder.Build();
 
