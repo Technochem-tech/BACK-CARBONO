@@ -4,7 +4,8 @@ namespace WebApplicationCarbono.Interface
 {
     public interface ISaldo
     {
-        decimal GetSaldo(int IdUsuario);
- 
+        Task<decimal> SaldoDinheiro (int IdUsuario);
+        Task<decimal> SaldoCredito(int IdUsuario);
+
     }
 }

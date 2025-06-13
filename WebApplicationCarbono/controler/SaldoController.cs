@@ -2,8 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using WebApplicationCarbono.Interface;
-using WebApplicationCarbono.Modelos;
-using WebApplicationCarbono.Serviços;
 
 namespace WebApplicationCarbono.controler
 {
@@ -19,25 +17,44 @@ namespace WebApplicationCarbono.controler
             _saldoServiços = SaldoServiços;
         }
 
-        [HttpGet("GetSaldo/")]
-        public IActionResult GetSaldo ()
+        [HttpGet("GetSaldo-dinheiro/")]
+        public async Task<IActionResult> SaldoDinheiro()
         {
             try
-            {   var idUsuario = Helpers.UserHelper.ObterIdUsuarioLogado(HttpContext);
+            {
+                var idUsuario = Helpers.UserHelper.ObterIdUsuarioLogado(HttpContext);
                 if (idUsuario == 0)
                 {
                     return Unauthorized(new { erro = "Usuário não autenticado corretamente." });
                 }
 
-                var saldo = _saldoServiços.GetSaldo(idUsuario);
-                return Ok(new {saldoemconta =  saldo});
+                var saldo = await _saldoServiços.SaldoDinheiro(idUsuario);
+                return Ok(new { saldoemconta = saldo }); 
             }
             catch (Exception ex)
             {
-
                 return BadRequest(ex.Message);
             }
         }
 
+        [HttpGet("GetSaldo-Creditos/")]
+        public async Task<IActionResult> SaldoCredito()
+        {
+            try
+            {
+                var idUsuario = Helpers.UserHelper.ObterIdUsuarioLogado(HttpContext);
+                if (idUsuario == 0)
+                {
+                    return Unauthorized(new { erro = "Usuário não autenticado corretamente." });
+                }
+
+                var saldo = await _saldoServiços.SaldoCredito(idUsuario);
+                return Ok(new { saldoemconta = saldo });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

@@ -15,6 +15,9 @@ public class CompraCreditosServico : ICompraCreditos
 
     public CompraCreditoResultado IniciarCompraCredito(ComprarCredito compra)
     {
+        if (compra.quantidadeCredito <= 0)
+            throw new ArgumentException("Quantidade de créditos deve ser maior que zero.");
+
         decimal valorTotal = compra.quantidadeCredito * VALOR_UNITARIO_CREDITO;
 
         var pagamento = _pagamentoServico.CriarPagamentoPixAsync(valorTotal, compra.emailUsuario).Result;

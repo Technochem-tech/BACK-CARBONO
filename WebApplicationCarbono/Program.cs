@@ -21,7 +21,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<ISaldo, SaldoServiço>();
-builder.Services.AddScoped<ICreditos, CreditosServiço>();
 builder.Services.AddScoped<IProjetos, ProjetosServiço>();
 builder.Services.AddScoped<ITransaçao, TransacaoServiço>();
 builder.Services.AddScoped<IUsuario, UsuarioServiço>();

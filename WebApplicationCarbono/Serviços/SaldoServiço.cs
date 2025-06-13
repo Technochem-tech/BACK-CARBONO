@@ -12,42 +12,76 @@ namespace WebApplicationCarbono.Serviços
         private readonly String _stringConexao;
         public SaldoServiço(IConfiguration configuaração)
         {
-            _stringConexao = configuaração.GetConnectionString("DefaultConnection");
+            _stringConexao = configuaração.GetConnectionString("DefaultConnection")
+                ?? throw new ArgumentNullException("DefaultConnection");
         }
 
-
-
-
-        public decimal GetSaldo(int IdUsuario)
+        public async Task<decimal> SaldoCredito(int IdUsuario)
         {
             decimal saldoEmConta = 0.00m;
 
             try
             {
-                using (var conexao = new NpgsqlConnection(_stringConexao))
+                await using (var conexao = new NpgsqlConnection(_stringConexao))
                 {
                     conexao.Open();
 
-                    var comando = new NpgsqlCommand(
-                    "SELECT COALESCE(SUM(valor), 0) FROM saldo_usuarios_dinamica WHERE usuario_id = @usuarioId", conexao);
-                    comando.Parameters.AddWithValue("usuarioId", IdUsuario);
-                    var saldo = (decimal)comando.ExecuteScalar();
-                    return saldoEmConta = saldo;
-                }
+                    var comando = new NpgsqlCommand(@"SELECT COALESCE(SUM(valor_creditos), 0) FROM saldo_usuario_dinamica 
+                        WHERE id_usuario = @idUsuario;", conexao);
+                    comando.Parameters.AddWithValue("idUsuario", IdUsuario);
 
+                    var saldoObj = await comando.ExecuteScalarAsync();
+                    if (saldoObj != null && saldoObj != DBNull.Value)
+                    {
+                        return saldoEmConta = Convert.ToDecimal(saldoObj);
+                    }
+                    else
+                    {
+                        return saldoEmConta = 0.00m;
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Erro ao buscar o saldo: " + ex.Message);
+            }
+
+        }
+
+        public async Task<decimal> SaldoDinheiro(int IdUsuario)
+        {
+            decimal saldoEmConta = 0.00m;
+            try
+            {
+                await using (var conexao = new NpgsqlConnection(_stringConexao))
+                {
+                    conexao.Open();
+
+                    var comando = new NpgsqlCommand(@"SELECT COALESCE(SUM(saldo_dinheiro), 0) FROM saldo_usuario_dinamica 
+                        WHERE id_usuario = @idUsuario;", conexao);
+                    comando.Parameters.AddWithValue("idUsuario", IdUsuario);
+
+                    var saldoObj = await comando.ExecuteScalarAsync();
+
+                    if (saldoObj != null && saldoObj != DBNull.Value)
+                    {
+                        return saldoEmConta = Convert.ToDecimal(saldoObj);
+                    }
+                    else
+                    {
+                        return saldoEmConta = 0.00m; 
+                    }
+
+                }
 
             }
             catch (Exception ex)
             {
-
                 throw new Exception("Erro ao buscar o saldo: " + ex.Message);
             }
-
-
         }
 
-
-
-
+        
     }
 }
