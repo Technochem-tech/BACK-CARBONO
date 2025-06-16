@@ -7,7 +7,6 @@ using WebApplicationCarbono.Serviços;
 
 namespace WebApplicationCarbono.controler
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ProjetosController : ControllerBase
@@ -20,16 +19,25 @@ namespace WebApplicationCarbono.controler
         }
 
         [HttpPost("CadastrarProjetos")]
-        public ActionResult CadastrarProjetos([FromBody] CadastroProjetosDto dto)
+        public async Task<ActionResult> CadastrarProjetos([FromForm] CadastroProjetosDto dto)
         {
             try
             {
-                _projetoServiços.CadastrarProjetos(dto);
+                // Lê a imagem enviada e converte para byte[]
+                byte[] bytesImagem;
+
+                using (var ms = new MemoryStream())
+                {
+                    await dto.img_projetos.CopyToAsync(ms);
+                    bytesImagem = ms.ToArray();
+                }
+
+                _projetoServiços.CadastrarProjetos(dto, bytesImagem);
+
                 return Ok("Projeto cadastrado com sucesso.");
             }
             catch (Exception ex)
             {
-
                 return BadRequest(ex.Message);
             }
         }

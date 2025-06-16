@@ -1,11 +1,17 @@
-﻿using System.Reflection.Metadata;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Reflection.Metadata;
 
 namespace WebApplicationCarbono.Dtos
 {
     public class CadastroProjetosDto
     {
-        public string titulo {  get; set; } 
-        public string descriçao { get; set; }   
-        public decimal valor { get; set; }  
+        [Required]
+        public string titulo { get; set; } = null!;
+        [Required]
+        public string descriçao { get; set; } = null!;
+        [Required]
+        public decimal valor { get; set; }
+        [Required]
+        public IFormFile img_projetos { get; set; } = null!; 
     }
 }

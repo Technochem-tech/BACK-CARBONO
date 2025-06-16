@@ -11,20 +11,21 @@ namespace WebApplicationCarbono.Serviços
         private readonly String _stringConexao;
         public ProjetosServiço(IConfiguration configuaração)
         {
-            _stringConexao = configuaração.GetConnectionString("DefaultConnection");
+            _stringConexao = configuaração.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("DefaultConnection", "A string de conexão não pode ser nula.");
         }
 
-        public void CadastrarProjetos(CadastroProjetosDto dto)
+        public void CadastrarProjetos(CadastroProjetosDto dto, byte[] imagemBytes)
         {
             using var conexao = new NpgsqlConnection(_stringConexao);
             conexao.Open();
 
             var comando = new NpgsqlCommand(
-                "INSERT INTO projetos (titulo, descricao, valor) VALUES (@Titulo, @Descricao, @Valor)", conexao);
+                "INSERT INTO projetos (titulo, descricao, valor, img_projetos) VALUES (@Titulo, @Descricao, @Valor, @Projetos)", conexao);
 
             comando.Parameters.AddWithValue("@Titulo", dto.titulo);
             comando.Parameters.AddWithValue("@Descricao", dto.descriçao);
             comando.Parameters.AddWithValue("@Valor", dto.valor);
+            comando.Parameters.AddWithValue("@Projetos", imagemBytes);
 
             comando.ExecuteNonQuery();
         }
@@ -74,18 +75,25 @@ namespace WebApplicationCarbono.Serviços
                 {
                     conexao.Open();
 
-                    var consulta = "SELECT titulo, valor, descricao FROM projetos";
+                    var consulta = "SELECT titulo, valor, descricao, img_projetos FROM projetos";
                     using (var comando = new NpgsqlCommand(consulta, conexao))
                     {
                         using (var reader = comando.ExecuteReader())
                         {
                             while (reader.Read())
                             {
+                                byte[]? imagemBytes = reader["img_projetos"] as byte[];
+
+                                string? imagemBase64 = imagemBytes != null
+                                    ? Convert.ToBase64String(imagemBytes)
+                                    : null;
+
                                 listaProjetos.Add(new
                                 {
                                     titulo = reader["titulo"].ToString(),
                                     valor = Convert.ToDecimal(reader["valor"]),
-                                    descricao = reader["descricao"].ToString()
+                                    descricao = reader["descricao"].ToString(),
+                                    imgBase64 = imagemBase64
                                 });
                             }
                         }
