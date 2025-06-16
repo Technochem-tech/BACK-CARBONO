@@ -93,7 +93,7 @@ public class CompraCreditosServico : ICompraCreditos
             using var updateCmd = new NpgsqlCommand(@"
             UPDATE saldo_usuario_dinamica
             SET valor_creditos = @quantidadeCredito,
-                status_transacao = 'Aprovado',
+                status_transacao = 'Concluído',
                 descricao = @descricao
             WHERE id_pagamento_mercadopago = @pagamentoId;", conexao);
 

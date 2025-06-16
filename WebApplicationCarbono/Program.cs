@@ -22,7 +22,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<ISaldo, SaldoServiço>();
 builder.Services.AddScoped<IProjetos, ProjetosServiço>();
-builder.Services.AddScoped<ITransaçao, TransacaoServiço>();
+builder.Services.AddScoped<IHistoricoTransacao, HistoricoTransacaoServiço>();
 builder.Services.AddScoped<IUsuario, UsuarioServiço>();
 builder.Services.AddScoped<IAutenticacao, AutenticacaoServiço>();
 builder.Services.AddScoped<IPagamento, PagamentoServico>();
