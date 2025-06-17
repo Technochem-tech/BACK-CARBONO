@@ -42,12 +42,30 @@ namespace WebApplicationCarbono.controler
             }
         }
 
-        [HttpPut("EditarProjeto")]
-        public IActionResult Editar([FromQuery] int id, [FromBody] EditarProjetoDto dto)
+        [HttpPatch("EditarProjeto")]
+        public async Task<IActionResult> Editar([FromQuery] int id, [FromForm] EditarProjetoDto dto)
         {
-            _projetoServiços.EditarProjeto(id, dto);
-            return Ok(new { mensagem = "Projeto atualizado com sucesso!" });
+            try
+            {
+                // Lê a imagem, se tiver sido enviada
+                if (dto.img_projetos != null)
+                {
+                    using var ms = new MemoryStream();
+                    await dto.img_projetos.CopyToAsync(ms);
+                    dto.imagemBytes = ms.ToArray();
+                }
+
+                // Chama o serviço que já verifica o que veio preenchido
+                _projetoServiços.EditarProjeto(id, dto);
+
+                return Ok(new { mensagem = "Projeto atualizado com sucesso!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
+
 
         [HttpDelete("deletarProjeto")]
         public IActionResult Deletar([FromQuery] int id)
@@ -68,28 +86,6 @@ namespace WebApplicationCarbono.controler
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpGet("ListarProjetos-valor-estimado")]
-        public IActionResult ListarProjetos([FromQuery] decimal? valorEstimado)
-        {
-            try
-            {
-                if (valorEstimado.HasValue)
-                {
-                    var projetosFiltrados = _projetoServiços.ListarProjetosPorValorAproximado(valorEstimado.Value);
-                    return Ok(new { projetos = projetosFiltrados });
-                }
-                else
-                {
-                    var todosProjetos = _projetoServiços.ListarProjetos();
-                    return Ok(new { projetos = todosProjetos });
-                }
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { erro = ex.Message });
             }
         }
     }

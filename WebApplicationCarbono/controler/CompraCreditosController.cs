@@ -29,17 +29,18 @@ namespace WebApplicationCarbono.Controllers
 
                 var compra = new ComprarCredito
                 {
-                    idUsuario = idUsuario,
-                    emailUsuario = emailUsuario,
-                    quantidadeCredito = dto.quantidadeCredito
+                    IdUsuario = idUsuario,
+                    EmailUsuario = emailUsuario,
+                    ValorReais = dto.ValorReais,
+                    IdProjeto = dto.IdProjeto
                 };
 
                 var resultado = _servico.IniciarCompraCredito(compra);
 
                 return Ok(new
                 {
-                    qrCode = resultado.qrCode,
-                    pagamentoId = resultado.pagamentoId
+                    qrCode = resultado.QrCode,
+                    pagamentoId = resultado.PagamentoId
                 });
             }
             catch (Exception ex)
@@ -47,6 +48,7 @@ namespace WebApplicationCarbono.Controllers
                 return BadRequest(new { erro = "Erro ao iniciar a compra: " + ex.Message });
             }
         }
+
 
         [HttpPost("webhook/mercadopago")]
         [AllowAnonymous]

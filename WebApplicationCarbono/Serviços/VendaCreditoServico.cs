@@ -35,15 +35,17 @@ public class VendaCreditoServico : IVendaCredito
 
         // Insere a venda na tabela com os créditos negativos e saldo_dinheiro
         await using var insertCmd = new NpgsqlCommand(@"
-            INSERT INTO saldo_usuario_dinamica 
-            (id_usuario, tipo_transacao, valor_creditos, saldo_dinheiro, data_hora, descricao, status_transacao)
-            VALUES
-            (@idUsuario, 'venda', @valorNegativo, @valorDinheiro, NOW(), @descricao, 'Concluido');", conexao);
+        INSERT INTO saldo_usuario_dinamica 
+        (id_usuario, tipo_transacao, valor_creditos, creditos_reservados, saldo_dinheiro, data_hora, descricao, status_transacao, id_projetos)
+        VALUES
+        (@idUsuario, 'venda', @valorNegativo, @reservados, @valorDinheiro, NOW(), @descricao, 'Concluido', @idProjeto);", conexao);
 
         insertCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
         insertCmd.Parameters.AddWithValue("@valorNegativo", -quantidadeCreditos);
+        insertCmd.Parameters.AddWithValue("@reservados", 0); // ← creditos_reservados
         insertCmd.Parameters.AddWithValue("@valorDinheiro", valorDinheiro);
         insertCmd.Parameters.AddWithValue("@descricao", $"Venda de {quantidadeCreditos} créditos (R$ {valorDinheiro:F2})");
+        insertCmd.Parameters.AddWithValue("@idProjeto", DBNull.Value); // ou 0 se preferir
 
         await insertCmd.ExecuteNonQueryAsync();
 

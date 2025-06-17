@@ -12,13 +12,15 @@ public class PagamentoServico : IPagamento
             TransactionAmount = valor,
             Description = "Pagamento via Pix - Créditos de Carbono",
             PaymentMethodId = "pix",
-            Payer = new PaymentPayerRequest { Email = emailCliente }
+            Payer = new PaymentPayerRequest { Email = emailCliente },
+            DateOfExpiration = DateTime.UtcNow.AddMinutes(5) // ← expira em 2 horas
         };
 
         var client = new PaymentClient();
         var payment = await client.CreateAsync(paymentRequest);
         return payment;
     }
+
 
     public async Task<string> ObterStatusPagamentoAsync(string pagamentoId)
     {

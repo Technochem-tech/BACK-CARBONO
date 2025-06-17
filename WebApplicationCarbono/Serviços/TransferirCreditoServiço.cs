@@ -92,18 +92,21 @@ namespace WebApplicationCarbono.Serviços
         {
             var comando = new NpgsqlCommand(@"
             INSERT INTO saldo_usuario_dinamica 
-            (id_usuario, tipo_transacao, valor_creditos, descricao, id_usuario_destino, status_transacao) 
-            VALUES (@usuarioId, @tipo_transacao, @valor, @descricao, @usuarioDestinoId, @status_transacao)", conexao);
+            (id_usuario, tipo_transacao, valor_creditos, creditos_reservados, descricao, id_usuario_destino, status_transacao, id_projetos) 
+            VALUES (@usuarioId, @tipo_transacao, @valor, @reservados, @descricao, @usuarioDestinoId, @status_transacao, @idProjeto)", conexao);
 
             comando.Parameters.AddWithValue("usuarioId", usuarioId);
             comando.Parameters.AddWithValue("tipo_transacao", tipo_transacao);
             comando.Parameters.AddWithValue("valor", valor);
+            comando.Parameters.AddWithValue("reservados", 0); // ← creditos_reservados padrão
             comando.Parameters.AddWithValue("descricao", descricao ?? "");
             comando.Parameters.AddWithValue("usuarioDestinoId", (object?)usuarioDestinoId ?? DBNull.Value);
             comando.Parameters.AddWithValue("status_transacao", "concluído");
+            comando.Parameters.AddWithValue("idProjeto", DBNull.Value); // ou 0 se preferir
 
             comando.ExecuteNonQuery();
         }
+
         // // Método para obter o nome do usuário com base no ID
         private string ObterNomeUsuario(NpgsqlConnection conexao, int usuarioId)
         {

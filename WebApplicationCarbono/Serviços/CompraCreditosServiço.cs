@@ -1,11 +1,11 @@
 ﻿using Npgsql;
 using System.Threading.Tasks;
+using WebApplicationCarbono.Modelos;
 
 public class CompraCreditosServico : ICompraCreditos
 {
     private readonly string _conexao;
     private readonly PagamentoServico _pagamentoServico;
-    private const decimal VALOR_UNITARIO_CREDITO = 0.01m;
 
     public CompraCreditosServico(IConfiguration config, PagamentoServico pagamentoServico)
     {
@@ -15,99 +15,164 @@ public class CompraCreditosServico : ICompraCreditos
 
     public CompraCreditoResultado IniciarCompraCredito(ComprarCredito compra)
     {
-        if (compra.quantidadeCredito <= 0)
-            throw new ArgumentException("Quantidade de créditos deve ser maior que zero.");
+        if (compra.ValorReais <= 0)
+            throw new ArgumentException("Valor deve ser maior que zero.");
 
-        decimal valorTotal = compra.quantidadeCredito * VALOR_UNITARIO_CREDITO;
-
-        var pagamento = _pagamentoServico.CriarPagamentoPixAsync(valorTotal, compra.emailUsuario).Result;
-
-        var qrCodePix = pagamento.PointOfInteraction.TransactionData.QrCode;
-        var idPagamento = pagamento.Id?.ToString();
-
-        // Verifica se o id do pagamento é nulo
-        if (idPagamento == null)
-            throw new Exception("Falha ao gerar ID do pagamento.");
+        decimal valorUnitarioProjeto;
+        decimal creditosDisponiveis;
 
         using var conexao = new NpgsqlConnection(_conexao);
         conexao.Open();
 
-        using var cmd = new NpgsqlCommand(@"
-        INSERT INTO saldo_usuario_dinamica
-        (id_usuario, tipo_transacao, valor_creditos, data_hora, descricao, id_usuario_destino, status_transacao, id_pagamento_mercadopago)
-        VALUES (@id_usuario, 'compra', 0, NOW(), @descricao, NULL, 'Pendente', @id_pagamento);", conexao);
+        using (var cmdProjeto = new NpgsqlCommand("SELECT valor, creditos_disponivel FROM projetos WHERE id = @idProjeto", conexao))
+        {
+            cmdProjeto.Parameters.AddWithValue("@idProjeto", compra.IdProjeto);
+            using var reader = cmdProjeto.ExecuteReader();
 
-        cmd.Parameters.AddWithValue("@id_usuario", compra.idUsuario);
-        cmd.Parameters.AddWithValue("@id_pagamento", idPagamento);
-        cmd.Parameters.AddWithValue("@descricao", $"Compra iniciada via Pix - quantidade: {compra.quantidadeCredito}");
+            if (!reader.Read())
+                throw new Exception("Projeto não encontrado.");
 
-        cmd.ExecuteNonQuery();
+            valorUnitarioProjeto = reader.GetDecimal(0);
+            creditosDisponiveis = reader.GetDecimal(1);
+        }
 
+        decimal quantidadeCredito = compra.ValorReais / valorUnitarioProjeto;
+
+        if (quantidadeCredito <= 0)
+            throw new Exception("Valor insuficiente para comprar créditos.");
+
+        if (quantidadeCredito > creditosDisponiveis)
+            throw new Exception("Créditos insuficientes no projeto.");
+
+        var pagamento = _pagamentoServico.CriarPagamentoPixAsync(compra.ValorReais, compra.EmailUsuario).Result;
+
+        string qrCodePix = pagamento.PointOfInteraction.TransactionData.QrCode;
+        string? idPagamento = pagamento.Id?.ToString();
+
+        if (idPagamento == null)
+            throw new Exception("Erro ao gerar pagamento.");
+
+        using (var cmdDescontar = new NpgsqlCommand("UPDATE projetos SET creditos_disponivel = creditos_disponivel - @qtd WHERE id = @idProjeto", conexao))
+        {
+            cmdDescontar.Parameters.AddWithValue("@qtd", quantidadeCredito);
+            cmdDescontar.Parameters.AddWithValue("@idProjeto", compra.IdProjeto);
+            cmdDescontar.ExecuteNonQuery();
+        }
+
+        using var insertCmd = new NpgsqlCommand(@"
+            INSERT INTO saldo_usuario_dinamica
+            (id_usuario, tipo_transacao, valor_creditos, creditos_reservados, data_hora, descricao, id_usuario_destino, status_transacao, id_pagamento_mercadopago, id_projetos)
+            VALUES (@id_usuario, 'compra', 0, @creditos_reservados, NOW(), @descricao, NULL, 'Pendente', @id_pagamento, @id_projetos);", conexao);
+
+        insertCmd.Parameters.AddWithValue("@id_usuario", compra.IdUsuario);
+        insertCmd.Parameters.AddWithValue("@creditos_reservados", quantidadeCredito);
+        insertCmd.Parameters.AddWithValue("@descricao", $"Compra via Pix - R$ {compra.ValorReais:F2} para {quantidadeCredito:F2} créditos");
+        insertCmd.Parameters.AddWithValue("@id_pagamento", idPagamento);
+        insertCmd.Parameters.AddWithValue("@id_projetos", compra.IdProjeto);
+        insertCmd.ExecuteNonQuery();
 
         return new CompraCreditoResultado
         {
-            qrCode = qrCodePix,
-            pagamentoId = idPagamento
+            QrCode = qrCodePix,
+            PagamentoId = idPagamento
         };
     }
 
     public async Task<string> ConfirmarCompraWebhookAsync(MercadoPagoNotification notification)
     {
         var pagamentoId = notification.Data.Id;
-
         var status = await _pagamentoServico.ObterStatusPagamentoAsync(pagamentoId);
+
+        using var conexao = new NpgsqlConnection(_conexao);
+        conexao.Open();
+
+        using var selectCmd = new NpgsqlCommand(@"
+            SELECT id, descricao, id_usuario, id_projetos, valor_creditos, creditos_reservados, data_hora, status_transacao 
+            FROM saldo_usuario_dinamica 
+            WHERE id_pagamento_mercadopago = @pagamentoId", conexao);
+
+        selectCmd.Parameters.AddWithValue("@pagamentoId", pagamentoId);
+
+        using var reader = selectCmd.ExecuteReader();
+
+        if (!reader.Read())
+            return "Transação não encontrada.";
+
+        int registroId = reader.GetInt32(0);
+        string descricao = reader.GetString(1);
+        int idUsuario = reader.GetInt32(2);
+        int idProjeto = reader.IsDBNull(3) ? 0 : reader.GetInt32(3);
+        decimal valorCreditos = reader.GetDecimal(4);
+        decimal creditosReservados = reader.GetDecimal(5);
+        DateTime dataHora = reader.GetDateTime(6);
+        string statusTransacao = reader.GetString(7);
+        reader.Close();
+
+        var tempoDecorrido = DateTime.UtcNow - dataHora.ToUniversalTime();
 
         if (status == "approved")
         {
-            using var conexao = new NpgsqlConnection(_conexao);
-            conexao.Open();
+            if (statusTransacao == "Concluído")
+                return "Compra já confirmada.";
 
-            using var selectCmd = new NpgsqlCommand(@"
-            SELECT descricao, id_usuario FROM saldo_usuario_dinamica
-            WHERE id_pagamento_mercadopago = @pagamentoId;", conexao);
-
-            selectCmd.Parameters.AddWithValue("@pagamentoId", pagamentoId);
-
-            using var reader = selectCmd.ExecuteReader();
-
-            if (!reader.Read())
-                return "Registro pendente não encontrado.";
-
-            string descricao = reader.GetString(0);
-            int idUsuario = reader.GetInt32(1);
-
-            reader.Close();
-
-            int quantidadeCredito = 0;
-            var partes = descricao.Split("quantidade:");
-            if (partes.Length == 2)
-                int.TryParse(partes[1].Trim(), out quantidadeCredito);
-
-            if (quantidadeCredito == 0)
-                return "Erro ao extrair a quantidade de créditos.";
-
-            // Calcula o valor pago com base na constante
-            decimal valorPago = quantidadeCredito * VALOR_UNITARIO_CREDITO;
-
-            // Atualiza a transação com os dados completos
             using var updateCmd = new NpgsqlCommand(@"
-            UPDATE saldo_usuario_dinamica
-            SET valor_creditos = @quantidadeCredito,
-                status_transacao = 'Concluído',
-                descricao = @descricao
-            WHERE id_pagamento_mercadopago = @pagamentoId;", conexao);
+                UPDATE saldo_usuario_dinamica
+                SET valor_creditos = creditos_reservados,
+                    creditos_reservados = 0,
+                    status_transacao = 'Concluído',
+                    descricao = @descricaoFinal
+                WHERE id = @idRegistro;", conexao);
 
-            updateCmd.Parameters.AddWithValue("@quantidadeCredito", quantidadeCredito);
-            updateCmd.Parameters.AddWithValue("@pagamentoId", pagamentoId);
-            updateCmd.Parameters.AddWithValue("@descricao", $"Compra aprovada via Pix - {quantidadeCredito} créditos (R$ {valorPago:F2})");
+            updateCmd.Parameters.AddWithValue("@descricaoFinal", $"Compra aprovada via Pix - {creditosReservados:F2} créditos");
+            updateCmd.Parameters.AddWithValue("@idRegistro", registroId);
+            updateCmd.ExecuteNonQuery();
 
-            int linhasAfetadas = updateCmd.ExecuteNonQuery();
+            string nomeUsuario = ObterNomeUsuario(conexao, idUsuario);
+            return $"Compra confirmada. {creditosReservados:F2} créditos adicionados ao usuário {nomeUsuario}.";
+        }
+        else if (statusTransacao == "Pendente" && tempoDecorrido.TotalMinutes >= 5)
+        {
+            using var transaction = conexao.BeginTransaction();
 
-            if (linhasAfetadas > 0)
-                return $"Compra confirmada. {quantidadeCredito} créditos adicionados para o usuário {idUsuario}.";
+            try
+            {
+                using var updateCmd = new NpgsqlCommand(@"
+                    UPDATE saldo_usuario_dinamica
+                    SET status_transacao = 'Expirado-Falhou',
+                        creditos_reservados = 0
+                    WHERE id = @idRegistro;", conexao, transaction);
+
+                updateCmd.Parameters.AddWithValue("@idRegistro", registroId);
+                updateCmd.ExecuteNonQuery();
+
+                using var revertCmd = new NpgsqlCommand(@"
+                    UPDATE projetos
+                    SET creditos_disponivel = creditos_disponivel + @creditos
+                    WHERE id = @idProjeto;", conexao, transaction);
+
+                revertCmd.Parameters.AddWithValue("@creditos", creditosReservados);
+                revertCmd.Parameters.AddWithValue("@idProjeto", idProjeto);
+                revertCmd.ExecuteNonQuery();
+
+                transaction.Commit();
+                return "Pagamento expirado. Créditos devolvidos ao projeto.";
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                return $"Erro ao expirar pagamento: {ex.Message}";
+            }
         }
 
         return "Pagamento ainda não aprovado.";
     }
 
+    private string ObterNomeUsuario(NpgsqlConnection conexao, int usuarioId)
+    {
+        var comando = new NpgsqlCommand("SELECT nome FROM usuarios WHERE id = @id", conexao);
+        comando.Parameters.AddWithValue("id", usuarioId);
+
+        var resultado = comando.ExecuteScalar();
+        return resultado?.ToString() ?? "Desconhecido";
+    }
 }

@@ -12,6 +12,9 @@ namespace WebApplicationCarbono.Dtos
         [Required]
         public decimal valor { get; set; }
         [Required]
-        public IFormFile img_projetos { get; set; } = null!; 
+        public IFormFile img_projetos { get; set; } = null!;
+        [Required]
+        public Decimal creditosDisponivel{ get; set; }
+        
     }
 }
