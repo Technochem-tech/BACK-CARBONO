@@ -106,6 +106,58 @@ namespace WebApplicationCarbono.Serviços
             }
 
             return listaProjetos;
+
+        }
+
+        public List<object> ListarProjetosPorValorAproximado(decimal valorEstimado)
+        {
+            var listaProjetos = new List<object>();
+
+            try
+            {
+                using (var conexao = new NpgsqlConnection(_stringConexao))
+                {
+                    conexao.Open();
+
+                    var sql = @"
+                        SELECT titulo, valor, descricao, img_projetos 
+                        FROM projetos
+                        ORDER BY ABS(valor - @valorEstimado) ASC, valor ASC
+                        LIMIT 10";
+
+                    using (var comando = new NpgsqlCommand(sql, conexao))
+                    {
+                        comando.Parameters.AddWithValue("valorEstimado", valorEstimado);
+
+                        using (var reader = comando.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                byte[]? imagemBytes = reader["img_projetos"] as byte[];
+
+                                string? imagemBase64 = imagemBytes != null
+                                    ? Convert.ToBase64String(imagemBytes)
+                                    : null;
+
+                                listaProjetos.Add(new
+                                {
+                                    titulo = reader["titulo"].ToString(),
+                                    valor = Convert.ToDecimal(reader["valor"]),
+                                    descricao = reader["descricao"].ToString(),
+                                    imgBase64 = imagemBase64
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Erro ao listar projetos por valor aproximado: " + ex.Message);
+            }
+
+            return listaProjetos;
         }
     }
 }
+

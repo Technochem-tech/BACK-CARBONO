@@ -70,5 +70,27 @@ namespace WebApplicationCarbono.controler
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("ListarProjetos-valor-estimado")]
+        public IActionResult ListarProjetos([FromQuery] decimal? valorEstimado)
+        {
+            try
+            {
+                if (valorEstimado.HasValue)
+                {
+                    var projetosFiltrados = _projetoServiços.ListarProjetosPorValorAproximado(valorEstimado.Value);
+                    return Ok(new { projetos = projetosFiltrados });
+                }
+                else
+                {
+                    var todosProjetos = _projetoServiços.ListarProjetos();
+                    return Ok(new { projetos = todosProjetos });
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { erro = ex.Message });
+            }
+        }
     }
 }
