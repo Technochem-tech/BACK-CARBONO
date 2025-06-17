@@ -12,7 +12,7 @@ namespace WebApplicationCarbono.Serviços
         {
             _conexao = config.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("Connection string 'DefaultConnection' não encontrada na configuração.");
         }
-
+        // Método para verificar se o destinatário existe com base no email ou CNPJ
         public object VerificarDestinatario(string emailOuCnpj)
         {
             using var conexao = new NpgsqlConnection(_conexao);
@@ -36,7 +36,7 @@ namespace WebApplicationCarbono.Serviços
 
             throw new Exception("Destinatário não encontrado.");
         }
-
+        // Método para realizar a transferência de créditos entre usuários
         public string RealizarTransferencia(TransferenciaModelo transferencia)
         {
 
@@ -58,11 +58,14 @@ namespace WebApplicationCarbono.Serviços
                 if (!TemSaldoSuficiente(conexao, transferencia.RemetenteId, transferencia.QuantidadeCredito))
                     return "Saldo insuficiente para transferência.";
 
+                var nomeRemetente = ObterNomeUsuario(conexao, transferencia.RemetenteId);
+                var nomeDestinatario = ObterNomeUsuario(conexao, DestinatarioId);
+
                 RegistrarMovimentacao(conexao, transferencia.RemetenteId, "transferência_saida", -transferencia.QuantidadeCredito,
-                    $"Transferência para usuário {DestinatarioId}: {transferencia.Descricao}", DestinatarioId);
+                    $"Transferência para {nomeDestinatario}: {transferencia.Descricao}", DestinatarioId);
 
                 RegistrarMovimentacao(conexao, DestinatarioId, "transferência_entrada", transferencia.QuantidadeCredito,
-                    $"Transferência recebida do usuário {transferencia.RemetenteId}: {transferencia.Descricao}", transferencia.RemetenteId);
+                    $"Transferência recebida de {nomeRemetente}: {transferencia.Descricao}", transferencia.RemetenteId);
 
 
                 transacao.Commit();
@@ -74,7 +77,7 @@ namespace WebApplicationCarbono.Serviços
                 return "Erro na transferência: " + ex.Message;
             }
         }
-
+        // Método para verificar se o usuário tem saldo suficiente para a transferência
         private bool TemSaldoSuficiente(NpgsqlConnection conexao, int usuarioId, decimal valor)
         {
             var comando = new NpgsqlCommand(
@@ -84,6 +87,7 @@ namespace WebApplicationCarbono.Serviços
             return saldo >= valor;
         }
 
+        // Método para registrar a movimentação de créditos na tabela saldo_usuario_dinamica
         private void RegistrarMovimentacao(NpgsqlConnection conexao, int usuarioId, string tipo_transacao, decimal valor, string descricao, int? usuarioDestinoId = null)
         {
             var comando = new NpgsqlCommand(@"
@@ -100,8 +104,17 @@ namespace WebApplicationCarbono.Serviços
 
             comando.ExecuteNonQuery();
         }
+        // // Método para obter o nome do usuário com base no ID
+        private string ObterNomeUsuario(NpgsqlConnection conexao, int usuarioId)
+        {
+            var comando = new NpgsqlCommand("SELECT nome FROM usuarios WHERE id = @id", conexao);
+            comando.Parameters.AddWithValue("id", usuarioId);
 
+            var resultado = comando.ExecuteScalar();
+            return resultado?.ToString() ?? "Desconhecido";
+        }
 
+        // Método para obter o ID do destinatário com base no email ou CNPJ
         private int ObterDestinatarioId(NpgsqlConnection conexao, string emailOUCnpj)
         {
             var query = "SELECT id FROM usuarios WHERE email = @valor OR cnpj = @valor";
