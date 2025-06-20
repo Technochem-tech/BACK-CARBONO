@@ -2,11 +2,11 @@
 {
     public class BuscarUsuarioModelo
     {
-        public int codigoCadastro { get; set; }
-        public string Nome { get; set; }
-        public string Email { get; set; }
-        public string empresa { get; set; }
-        public string CNPJ { get; set; }
-        public string Telefone { get; set; }
+        public int Id { get; set; } = 0;
+        public string Nome { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string empresa { get; set; } = string.Empty;
+        public string CNPJ { get; set; } = string.Empty;
+        public string Telefone { get; set; } = string.Empty;
     }
 }

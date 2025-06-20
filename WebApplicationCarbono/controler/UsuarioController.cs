@@ -21,16 +21,21 @@ namespace WebApplicationCarbono.controler
         }
 
         [Authorize]
-        [HttpGet("ConsultarUsuario{id}")]
-        public ActionResult<BuscarUsuarioModelo> GetUsuario(int id)
+        [HttpGet("ConsultarUsuario")]
+        public ActionResult<BuscarUsuarioModelo> GetUsuario()
         {
-            var usuario = _usuarioServiços.GetUsuario(id);
-
-            if (usuario == null)
+            var idUsuario = UserHelper.ObterIdUsuarioLogado(HttpContext);
+            if (idUsuario <= 0)
             {
-                return NotFound("Usuário não encontrado.");
+                return Unauthorized(new { mensagem = "Usuário não autenticado." });
             }
 
+        
+            var usuario = _usuarioServiços.GetUsuario(idUsuario);
+            if (usuario == null)
+            {
+                return NotFound(new { mensagem = "Usuário não encontrado." });
+            }
             return Ok(usuario);
         }
 

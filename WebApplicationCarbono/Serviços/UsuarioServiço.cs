@@ -14,7 +14,7 @@ namespace WebApplicationCarbono.Serviços
 
         public UsuarioServiço(IConfiguration configuration)
         {
-            _stringConexao = configuration.GetConnectionString("DefaultConnection");
+            _stringConexao = configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("A string de conexão não foi configurada.");
         }
 
         
@@ -72,37 +72,31 @@ namespace WebApplicationCarbono.Serviços
 
         }
 
-        public BuscarUsuarioModelo GetUsuario(int IdUsuario)
+        public BuscarUsuarioModelo? GetUsuario(int IdUsuario)
         {
-            BuscarUsuarioModelo usuario = null;
+            BuscarUsuarioModelo? usuario = null;
 
             try
             {
-                using (var conexao = new NpgsqlConnection(_stringConexao))
+                using var conexao = new NpgsqlConnection(_stringConexao);
+                conexao.Open();
+
+                var query = "SELECT * FROM usuarios WHERE id = @Id";
+                using var comando = new NpgsqlCommand(query, conexao);
+                comando.Parameters.AddWithValue("Id", IdUsuario);
+
+                using var reader = comando.ExecuteReader();
+                if (reader.Read())
                 {
-                    conexao.Open();
-
-                    var query = "SELECT * FROM usuarios WHERE id = @Id";
-                    using (var comando = new NpgsqlCommand(query, conexao))
+                    usuario = new BuscarUsuarioModelo
                     {
-                        comando.Parameters.AddWithValue("Id", IdUsuario);
-
-                        using (var reader = comando.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                usuario = new BuscarUsuarioModelo
-                                {
-                                    codigoCadastro = reader.GetInt32(reader.GetOrdinal("id")),
-                                    Nome = reader.GetString(reader.GetOrdinal("nome")),
-                                    Email = reader.GetString(reader.GetOrdinal("email")),
-                                    empresa = reader.GetString(reader.GetOrdinal("empresa")),
-                                    CNPJ = reader.GetString(reader.GetOrdinal("cnpj")),
-                                    Telefone = reader.GetString(reader.GetOrdinal("telefone"))
-                                };
-                            }
-                        }
-                    }
+                        Id = reader.GetInt32(reader.GetOrdinal("id")),
+                        Nome = reader.GetString(reader.GetOrdinal("nome")),
+                        Email = reader.GetString(reader.GetOrdinal("email")),
+                        empresa = reader.GetString(reader.GetOrdinal("empresa")),
+                        CNPJ = reader.GetString(reader.GetOrdinal("cnpj")),
+                        Telefone = reader.GetString(reader.GetOrdinal("telefone"))
+                    };
                 }
             }
             catch (Exception ex)
@@ -113,7 +107,8 @@ namespace WebApplicationCarbono.Serviços
             return usuario;
         }
 
-      
+
+
 
         public byte[] BuscarImagemUsuario(int idUsuario)
         {

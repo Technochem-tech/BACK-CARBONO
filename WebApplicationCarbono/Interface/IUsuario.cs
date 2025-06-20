@@ -5,7 +5,7 @@ namespace WebApplicationCarbono.Interface
 {
     public interface IUsuario
     {
-        BuscarUsuarioModelo GetUsuario(int IdUsuario);
+        BuscarUsuarioModelo? GetUsuario(int IdUsuario);
         void CadastrarUsuario(CadastroUsuarioDto cadastroUsuarioDto);
         void EditarTelefone(int id, EditarTelefoneUsuarioDto dto);
         byte[] BuscarImagemUsuario(int idUsuario);
