@@ -66,7 +66,7 @@ namespace WebApplicationCarbono.Serviços
                     new Claim(ClaimTypes.NameIdentifier, idUsuario.ToString()),
                     new Claim(ClaimTypes.Email, loginDto.Email)
                 }),
-                Expires = DateTime.UtcNow.AddMinutes(1),
+                Expires = DateTime.UtcNow.AddMinutes(120),
                 Issuer = _jwtConfig.Issuer,
                 Audience = _jwtConfig.Audience,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(chave), SecurityAlgorithms.HmacSha256Signature)

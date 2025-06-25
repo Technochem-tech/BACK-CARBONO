@@ -95,7 +95,8 @@ namespace WebApplicationCarbono.Serviços
                         Email = reader.GetString(reader.GetOrdinal("email")),
                         empresa = reader.GetString(reader.GetOrdinal("empresa")),
                         CNPJ = reader.GetString(reader.GetOrdinal("cnpj")),
-                        Telefone = reader.GetString(reader.GetOrdinal("telefone"))
+                        Telefone = reader.GetString(reader.GetOrdinal("telefone")),
+                        DataCadastro = reader.GetDateTime(reader.GetOrdinal("data_registro")),
                     };
                 }
             }

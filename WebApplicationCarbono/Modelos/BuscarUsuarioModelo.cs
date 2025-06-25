@@ -8,5 +8,6 @@
         public string empresa { get; set; } = string.Empty;
         public string CNPJ { get; set; } = string.Empty;
         public string Telefone { get; set; } = string.Empty;
+        public DateTime DataCadastro { get; set; }
     }
 }
