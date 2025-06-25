@@ -25,11 +25,54 @@ namespace WebApplicationCarbono.Serviços
             {
                 using (var conexao = new NpgsqlConnection(_stringConexao))
                 {
+                    // verifica se todos os campos obrigatórios foram preenchidos
+                    if (string.IsNullOrWhiteSpace(cadastroUsuarioDto.Nome) ||
+                        string.IsNullOrWhiteSpace(cadastroUsuarioDto.Email) ||
+                        string.IsNullOrWhiteSpace(cadastroUsuarioDto.Senha) ||
+                        string.IsNullOrWhiteSpace(cadastroUsuarioDto.Empresa) ||
+                        string.IsNullOrWhiteSpace(cadastroUsuarioDto.CNPJ) ||
+                        string.IsNullOrWhiteSpace(cadastroUsuarioDto.Telefone))
+                    {
+                        throw new ArgumentException("Todos os campos são obrigatórios.");
+                    }
+
                     conexao.Open();
 
-                    
+                    // verifca se já existe um email cadastrado
+                    var comandoVerificacao = new NpgsqlCommand("SELECT COUNT(*) FROM usuarios WHERE email = @Email", conexao);
+                    comandoVerificacao.Parameters.AddWithValue("@Email", cadastroUsuarioDto.Email);
+                    int count = Convert.ToInt32(comandoVerificacao.ExecuteScalar());
+
+                    if (count > 0)
+                    {
+                        throw new ArgumentException("Já existe um usuário cadastrado com este email.");
+                    }
+
+                    // verifica se já existe um CNPJ cadastrado
+                    var comandoVerificacaoCNPJ = new NpgsqlCommand("SELECT COUNT(*) FROM usuarios WHERE cnpj = @CNPJ", conexao);
+                    comandoVerificacaoCNPJ.Parameters.AddWithValue("@CNPJ", cadastroUsuarioDto.CNPJ);
+                    int countCNPJ = Convert.ToInt32(comandoVerificacaoCNPJ.ExecuteScalar());
+
+                    if (countCNPJ > 0)
+                    {
+                        throw new ArgumentException("Já existe um usuário cadastrado com este CNPJ.");
+                    }
+
+                    // verifica se já existe um telefone cadastrado
+                    var comandoVerificacaoTelefone = new NpgsqlCommand("SELECT COUNT(*) FROM usuarios WHERE telefone = @Telefone", conexao);
+                    comandoVerificacaoTelefone.Parameters.AddWithValue("@Telefone", cadastroUsuarioDto.Telefone);
+                    int countTelefone = Convert.ToInt32(comandoVerificacaoTelefone.ExecuteScalar());
+
+                    if (countTelefone > 0)
+                    {
+                        throw new ArgumentException("Já existe um usuário cadastrado com este telefone.");
+                    }
+
+
+                    // Criptografa a senha antes de salvar no banco de dados
                     string senhaHash = BCrypt.Net.BCrypt.HashPassword(cadastroUsuarioDto.Senha);
 
+                    // Insere o novo usuário no banco de dados
                     string query = @"
                         INSERT INTO usuarios (nome, email, senha, empresa, cnpj, telefone)
                         VALUES (@nome, @email, @senha, @empresa, @cnpj, @telefone);
@@ -50,7 +93,7 @@ namespace WebApplicationCarbono.Serviços
             }
             catch (Exception ex)
             {
-                throw new Exception("Erro ao cadastrar usuário: " + ex.Message);
+                throw;
             }
         }
 
@@ -66,7 +109,7 @@ namespace WebApplicationCarbono.Serviços
             int linhasAfetadas = comando.ExecuteNonQuery();
             if (linhasAfetadas == 0)
             {
-                throw new Exception("Projeto não encontrado.");
+                throw new Exception("Telefone não alterado.");
             }
 
 
@@ -102,7 +145,7 @@ namespace WebApplicationCarbono.Serviços
             }
             catch (Exception ex)
             {
-                throw new Exception("Erro ao consultar usuário: " + ex.Message);
+                throw new Exception("Erro ao buscar usuário: " + ex.Message);
             }
 
             return usuario;
