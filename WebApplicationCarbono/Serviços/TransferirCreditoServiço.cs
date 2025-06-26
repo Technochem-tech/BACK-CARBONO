@@ -50,13 +50,13 @@ namespace WebApplicationCarbono.Serviços
                 int DestinatarioId = ObterDestinatarioId(conexao, transferencia.DestinatarioEmailOuCnpj);
 
                 if (transferencia.RemetenteId == DestinatarioId)
-                    return "Não é possível transferir créditos para si mesmo.";
+                    throw new Exception("Não é possível transferir créditos para si mesmo.");
 
                 if (transferencia.QuantidadeCredito <= 0)
-                    return "A quantidade de créditos a ser transferida deve ser maior que zero.";
+                    throw new Exception("A quantidade de créditos a ser transferida deve ser maior que zero.");
 
                 if (!TemSaldoSuficiente(conexao, transferencia.RemetenteId, transferencia.QuantidadeCredito))
-                    return "Saldo insuficiente para transferência.";
+                   throw new Exception("Saldo insuficiente para transferência.");
 
                 var nomeRemetente = ObterNomeUsuario(conexao, transferencia.RemetenteId);
                 var nomeDestinatario = ObterNomeUsuario(conexao, DestinatarioId);

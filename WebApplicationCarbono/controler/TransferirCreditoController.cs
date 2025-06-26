@@ -11,7 +11,6 @@ namespace WebApplicationCarbono.controler
     [ApiController]
     public class TransferirCreditoController : ControllerBase
     {
-
         private readonly ITransferirCredito _serviço;
 
         public TransferirCreditoController(ITransferirCredito serviço)
@@ -30,10 +29,9 @@ namespace WebApplicationCarbono.controler
             }
             catch (Exception ex)
             {
-
+                // 404 para destinatário não encontrado
                 return NotFound(new { mensagem = ex.Message });
             }
-
         }
 
         [Authorize]
@@ -42,7 +40,6 @@ namespace WebApplicationCarbono.controler
         {
             try
             {
-   
                 var remetenteId = Helpers.UserHelper.ObterIdUsuarioLogado(HttpContext);
 
                 var transferencia = new TransferenciaModelo
@@ -51,18 +48,36 @@ namespace WebApplicationCarbono.controler
                     DestinatarioEmailOuCnpj = dto.DestinatarioEmailOuCnpj,
                     QuantidadeCredito = dto.QuantidadeCredito,
                     Descricao = dto.Descricao
-
                 };
 
                 var mensagem = _serviço.RealizarTransferencia(transferencia);
+
+                // Se mensagem começar com "Erro", lançar erro para ser capturado no catch
+                if (mensagem.StartsWith("Erro"))
+                {
+                    if (mensagem.Contains("para si mesmo") ||
+                        mensagem.Contains("maior que zero") ||
+                        mensagem.Contains("Saldo insuficiente"))
+                    {
+                        return BadRequest(new { mensagem });
+                    }
+
+                    if (mensagem.Contains("Destinatário não encontrado"))
+                    {
+                        return NotFound(new { mensagem });
+                    }
+
+                    // Outros erros tratados como bad request
+                    return BadRequest(new { mensagem = "Erro inesperado: " + mensagem });
+                }
+
                 return Ok(new { mensagem });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { erro = ex.Message });
+                // Erro inesperado retorna BadRequest
+                return BadRequest(new { mensagem = "Erro inesperado: " + ex.Message });
             }
-
-
         }
     }
 }
