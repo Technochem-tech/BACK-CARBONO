@@ -15,7 +15,7 @@ namespace WebApplicationCarbono.Serviços
         public RedefinicaoSenhaServiço(IConfiguration configuracao)
         {
             _configuracao = configuracao;
-            _stringConexao = configuracao.GetConnectionString("DefaultConnection");
+            _stringConexao = configuracao.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("DefaultConnection", "A string de conexão não foi configurada.");
         }
 
         public void EnviarEmailRedefinicao(EditarSenhaRequestDto dto)
@@ -25,34 +25,44 @@ namespace WebApplicationCarbono.Serviços
             using (var conexao = new NpgsqlConnection(_stringConexao))
             {
                 conexao.Open();
+                // Verifica se o email existe na tabela usuario
+                var comandoVerifica = new NpgsqlCommand("SELECT COUNT(*) FROM usuarios WHERE email = @Email", conexao);
+                comandoVerifica.Parameters.AddWithValue("@Email", dto.Email);
+                var count = (long?)comandoVerifica.ExecuteScalar();
+                if (count == 0)
+                    throw new Exception("Nenhum Usuário encontrado com esse email.");
+
+                // Insere o token na tabela redefinicao_senha
                 var comando = new NpgsqlCommand("INSERT INTO redefinicao_senha (email, token, validade) VALUES (@Email, @Token, @Validade)", conexao);
                 comando.Parameters.AddWithValue("@Email", dto.Email);
                 comando.Parameters.AddWithValue("@Token", token);
                 comando.Parameters.AddWithValue("@Validade", DateTime.Now.AddHours(1));
                 comando.ExecuteNonQuery();
             }
-
+            // Cria o email
             var mensagem = new MimeMessage();
             mensagem.From.Add(new MailboxAddress("Suporte", _configuracao["EmailSettings:From"]));
             mensagem.To.Add(new MailboxAddress("", dto.Email));
             mensagem.Subject = "Redefinição de senha";
 
-            string url = $"{_configuracao["FrontendUrl"]}/redefinir-senha?token={token}";
+            // Cria o link de redefinição de senha
+            string baseUrl = _configuracao["FrontendUrl"] ?? "http://localhost:8080";
+            string url = $"{baseUrl}/redefinir-senha?token={token}";
 
             mensagem.Body = new TextPart("html")
             {
                 Text = $"<p>Você solicitou redefinição de senha. Clique no link abaixo para alterar sua senha:</p>" +
-            $"<p><a href=\"{url}\">{url}</a></p>" +
-            $"<p>Se não foi você, ignore este email.</p>"
+                $"<p><a href=\"{url}\">{url}</a></p>" +
+                $"<p>Se não foi você, ignore este email.</p>"
             };
-
-
+            // Envia o email
             using var client = new SmtpClient();
             client.Connect(_configuracao["EmailSettings:SmtpServer"], int.Parse(_configuracao["EmailSettings:SmtpPort"]), true);
             client.Authenticate(_configuracao["EmailSettings:Username"], _configuracao["EmailSettings:Password"]);
             client.Send(mensagem);
             client.Disconnect(true);
         }
+
 
         public bool ValidarToken(string token)
         {

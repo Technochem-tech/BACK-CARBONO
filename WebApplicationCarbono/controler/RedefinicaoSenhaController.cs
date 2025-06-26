@@ -44,14 +44,14 @@ namespace WebApplicationCarbono.controler
         }
 
         [HttpPost("atualizar-senha")]
-        public IActionResult AtualizarSenha([FromQuery] string token, [FromBody] string novaSenha)
+        public IActionResult AtualizarSenha([FromBody] AtualizarSenhaRequestDto dto)
         {
-            if (string.IsNullOrEmpty(novaSenha))
+            if (string.IsNullOrEmpty(dto.NovaSenha))
                 return BadRequest(new { mensagem = "Nova senha é obrigatória." });
 
             try
             {
-                _servicoRedefinicao.AtualizarSenha(token, novaSenha);
+                _servicoRedefinicao.AtualizarSenha(dto.Token, dto.NovaSenha);
                 return Ok(new { mensagem = "Senha atualizada com sucesso." });
             }
             catch (System.Exception ex)
@@ -59,6 +59,7 @@ namespace WebApplicationCarbono.controler
                 return BadRequest(new { mensagem = ex.Message });
             }
         }
+
     }
 }
     
