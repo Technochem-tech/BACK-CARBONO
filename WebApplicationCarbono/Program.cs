@@ -40,6 +40,10 @@ builder.Services.AddScoped<ITransferirCredito, TransferirCreditoServiço>();
 builder.Services.AddScoped<ICompraCreditos, CompraCreditosServico>();
 builder.Services.AddScoped<IVendaCredito, VendaCreditoServico>();
 builder.Services.AddScoped<PagamentoServico>();
+builder.Services.AddHostedService<VerificadorDePagamentosService>();
+
+
+
 
 var app = builder.Build();
 

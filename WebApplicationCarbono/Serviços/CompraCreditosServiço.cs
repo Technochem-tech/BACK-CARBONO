@@ -12,7 +12,7 @@ public class CompraCreditosServico : ICompraCreditos
         _conexao = config.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("DefaultConnection");
         _pagamentoServico = pagamentoServico;
     }
-
+    // Método para iniciar a compra de créditos
     public CompraCreditoResultado IniciarCompraCredito(ComprarCredito compra)
     {
         if (compra.ValorReais <= 0)
@@ -77,7 +77,7 @@ public class CompraCreditosServico : ICompraCreditos
             PagamentoId = idPagamento
         };
     }
-
+    // Método chamado pelo webhook do Mercado Pago para confirmar a compra
     public async Task<string> ConfirmarCompraWebhookAsync(MercadoPagoNotification notification)
     {
         var pagamentoId = notification.Data.Id;
@@ -87,9 +87,9 @@ public class CompraCreditosServico : ICompraCreditos
         conexao.Open();
 
         using var selectCmd = new NpgsqlCommand(@"
-            SELECT id, descricao, id_usuario, id_projetos, valor_creditos, creditos_reservados, data_hora, status_transacao 
-            FROM saldo_usuario_dinamica 
-            WHERE id_pagamento_mercadopago = @pagamentoId", conexao);
+        SELECT id, descricao, id_usuario, id_projetos, valor_creditos, creditos_reservados, data_hora, status_transacao 
+        FROM saldo_usuario_dinamica 
+        WHERE id_pagamento_mercadopago = @pagamentoId", conexao);
 
         selectCmd.Parameters.AddWithValue("@pagamentoId", pagamentoId);
 
@@ -101,14 +101,12 @@ public class CompraCreditosServico : ICompraCreditos
         int registroId = reader.GetInt32(0);
         string descricao = reader.GetString(1);
         int idUsuario = reader.GetInt32(2);
-        int idProjeto = reader.IsDBNull(3) ? 0 : reader.GetInt32(3);
+        int idProjeto = reader.IsDBNull(3) ? 0 : reader.GetInt32(3);  // <<< aqui
         decimal valorCreditos = reader.GetDecimal(4);
         decimal creditosReservados = reader.GetDecimal(5);
         DateTime dataHora = reader.GetDateTime(6);
         string statusTransacao = reader.GetString(7);
         reader.Close();
-
-        var tempoDecorrido = DateTime.UtcNow - dataHora.ToUniversalTime();
 
         if (status == "approved")
         {
@@ -116,12 +114,12 @@ public class CompraCreditosServico : ICompraCreditos
                 return "Compra já confirmada.";
 
             using var updateCmd = new NpgsqlCommand(@"
-                UPDATE saldo_usuario_dinamica
-                SET valor_creditos = creditos_reservados,
-                    creditos_reservados = 0,
-                    status_transacao = 'Concluído',
-                    descricao = @descricaoFinal
-                WHERE id = @idRegistro;", conexao);
+            UPDATE saldo_usuario_dinamica
+            SET valor_creditos = creditos_reservados,
+                creditos_reservados = 0,
+                status_transacao = 'Concluído',
+                descricao = @descricaoFinal
+            WHERE id = @idRegistro;", conexao);
 
             updateCmd.Parameters.AddWithValue("@descricaoFinal", $"Compra aprovada via Pix - {creditosReservados:F2} créditos");
             updateCmd.Parameters.AddWithValue("@idRegistro", registroId);
@@ -130,25 +128,25 @@ public class CompraCreditosServico : ICompraCreditos
             string nomeUsuario = ObterNomeUsuario(conexao, idUsuario);
             return $"Compra confirmada. {creditosReservados:F2} créditos adicionados ao usuário {nomeUsuario}.";
         }
-        else if (statusTransacao == "Pendente" && tempoDecorrido.TotalMinutes >= 5)
+        else if (status == "expired" && statusTransacao == "Pendente")
         {
             using var transaction = conexao.BeginTransaction();
 
             try
             {
                 using var updateCmd = new NpgsqlCommand(@"
-                    UPDATE saldo_usuario_dinamica
-                    SET status_transacao = 'Expirado-Falhou',
-                        creditos_reservados = 0
-                    WHERE id = @idRegistro;", conexao, transaction);
+                UPDATE saldo_usuario_dinamica
+                SET status_transacao = 'Expirado-Falhou',
+                    creditos_reservados = 0
+                WHERE id = @idRegistro;", conexao, transaction);
 
                 updateCmd.Parameters.AddWithValue("@idRegistro", registroId);
                 updateCmd.ExecuteNonQuery();
 
                 using var revertCmd = new NpgsqlCommand(@"
-                    UPDATE projetos
-                    SET creditos_disponivel = creditos_disponivel + @creditos
-                    WHERE id = @idProjeto;", conexao, transaction);
+                UPDATE projetos
+                SET creditos_disponivel = creditos_disponivel + @creditos
+                WHERE id = @idProjeto;", conexao, transaction);
 
                 revertCmd.Parameters.AddWithValue("@creditos", creditosReservados);
                 revertCmd.Parameters.AddWithValue("@idProjeto", idProjeto);
@@ -166,6 +164,8 @@ public class CompraCreditosServico : ICompraCreditos
 
         return "Pagamento ainda não aprovado.";
     }
+
+   
 
     private string ObterNomeUsuario(NpgsqlConnection conexao, int usuarioId)
     {

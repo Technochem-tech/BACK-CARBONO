@@ -27,6 +27,20 @@ public class PagamentoController : ControllerBase
         });
     }
 
+    [HttpGet("status/{idPagamento}")]
+    public async Task<IActionResult> VerificarStatusPagamento(string idPagamento)
+    {
+        try
+        {
+            var status = await _pagamentoService.ObterStatusPagamentoAsync(idPagamento);
+            return Ok(new { idPagamento, status });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { erro = ex.Message });
+        }
+    }
+
     // Rota que retorna a imagem PNG do QR Code diretamente no response
     [HttpPost("pix-imagem")]
     public async Task<IActionResult> GerarPagamentoPixImagem([FromBody] PixRequestModel request)
@@ -41,6 +55,9 @@ public class PagamentoController : ControllerBase
         // Retornar a imagem PNG diretamente no response
         return File(bytes, "image/png");
     }
+
+
+
 }
 
 public class PixRequestModel
@@ -48,3 +65,4 @@ public class PixRequestModel
     public decimal Valor { get; set; }
     public string EmailCliente { get; set; }
 }
+

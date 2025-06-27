@@ -102,6 +102,17 @@ namespace WebApplicationCarbono.Serviços
             using var conexao = new NpgsqlConnection(_stringConexao);
             conexao.Open();
 
+            // verifica se já existe um telefone cadastrado
+            var comandoVerificacaoTelefone = new NpgsqlCommand("SELECT COUNT(*) FROM usuarios WHERE telefone = @Telefone", conexao);
+            comandoVerificacaoTelefone.Parameters.AddWithValue("@Telefone", dto.telefone);
+            int countTelefone = Convert.ToInt32(comandoVerificacaoTelefone.ExecuteScalar());
+
+            if (countTelefone > 0)
+            {
+                throw new ArgumentException("Já existe um usuário cadastrado com este telefone.");
+            }
+
+
             var comando = new NpgsqlCommand("UPDATE usuarios SET telefone = @Telefone WHERE id = @Id", conexao);
             comando.Parameters.AddWithValue("@Telefone", dto.telefone);
             comando.Parameters.AddWithValue("@Id", id);
