@@ -2,15 +2,16 @@
 using MercadoPago.Client.Payment;
 using MercadoPago.Resource.Payment;
 using Npgsql;
+using WebApplicationCarbono.Interface;
 
 public class PagamentoServico : IPagamento
 {
     private readonly string _conexao;
-  
+
     public PagamentoServico(IConfiguration config)
     {
         _conexao = config.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("DefaultConnection");
-        
+
     }
     public async Task<Payment> CriarPagamentoPixAsync(decimal valor, string emailCliente)
     {
@@ -40,7 +41,60 @@ public class PagamentoServico : IPagamento
     }
 
 
-    // Método para verificar pagamentos pendentes e atualizar o status
+    // Método para verificar pagamentos pendentes e atualizar o status se aprovados
+    public async Task VerificarPagamentosAprovadosasync()
+    {
+        using var conexao = new NpgsqlConnection(_conexao);
+        await conexao.OpenAsync();
+
+        var comando = new NpgsqlCommand(@"
+        SELECT id, id_pagamento_mercadopago, creditos_reservados, id_projetos, id_usuario
+        FROM saldo_usuario_dinamica
+        WHERE status_transacao = 'Pendente';", conexao);
+
+        using var reader = await comando.ExecuteReaderAsync();
+
+        var pendentes = new List<(int Id, string PagamentoId, decimal Reservados, int ProjetoId, int UsuarioId)>();
+
+        while (await reader.ReadAsync())
+        {
+            pendentes.Add((
+                reader.GetInt32(0),
+                reader.GetString(1),
+                reader.GetDecimal(2),
+                reader.IsDBNull(3) ? 0 : reader.GetInt32(3),
+                reader.GetInt32(4)
+            ));
+        }
+
+        await reader.CloseAsync();
+
+        foreach (var item in pendentes)
+        {
+            var status = await ObterStatusPagamentoAsync(item.PagamentoId);
+
+            if (status == "approved")
+            {
+                using var updateCmd = new NpgsqlCommand(@"
+                UPDATE saldo_usuario_dinamica
+                SET valor_creditos = creditos_reservados,
+                    creditos_reservados = 0,
+                    status_transacao = 'Concluído',
+                    descricao = @descricaoFinal
+                WHERE id = @idRegistro;", conexao);
+
+                updateCmd.Parameters.AddWithValue("@descricaoFinal", $"Compra aprovada via Pix - {item.Reservados:F2} créditos");
+                updateCmd.Parameters.AddWithValue("@idRegistro", item.Id);
+                await updateCmd.ExecuteNonQueryAsync();
+
+                string nomeUsuario = ObterNomeUsuario(conexao, item.UsuarioId);
+                Console.WriteLine($"Compra confirmada para {nomeUsuario}. Créditos: {item.Reservados:F2}");
+            }
+        }
+    }
+
+
+    // Método para verificar pagamentos pendentes e atualizar o status se expirados ou cancelados
     public async Task VerificarPagamentosPendentesAsync()
     {
         using var conexao = new NpgsqlConnection(_conexao);
@@ -71,8 +125,8 @@ public class PagamentoServico : IPagamento
         {
             var status = await ObterStatusPagamentoAsync(item.PagamentoId);
 
-             if ((status == "expired" || status == "cancelled") && item.ProjetoId.HasValue)
-             {
+            if ((status == "expired" || status == "cancelled") && item.ProjetoId.HasValue)
+            {
                 using var transaction = conexao.BeginTransaction();
 
                 try
@@ -104,5 +158,12 @@ public class PagamentoServico : IPagamento
         }
     }
 
+    private string ObterNomeUsuario(NpgsqlConnection conexao, int usuarioId)
+    {
+        var comando = new NpgsqlCommand("SELECT nome FROM usuarios WHERE id = @id", conexao);
+        comando.Parameters.AddWithValue("id", usuarioId);
 
+        var resultado = comando.ExecuteScalar();
+        return resultado?.ToString() ?? "Desconhecido";
+    }
 }

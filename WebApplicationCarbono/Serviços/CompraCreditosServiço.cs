@@ -101,7 +101,7 @@ public class CompraCreditosServico : ICompraCreditos
         int registroId = reader.GetInt32(0);
         string descricao = reader.GetString(1);
         int idUsuario = reader.GetInt32(2);
-        int idProjeto = reader.IsDBNull(3) ? 0 : reader.GetInt32(3);  // <<< aqui
+        int idProjeto = reader.IsDBNull(3) ? 0 : reader.GetInt32(3); 
         decimal valorCreditos = reader.GetDecimal(4);
         decimal creditosReservados = reader.GetDecimal(5);
         DateTime dataHora = reader.GetDateTime(6);

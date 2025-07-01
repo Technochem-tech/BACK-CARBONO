@@ -74,7 +74,7 @@ namespace WebApplicationCarbono.controler
             return Ok(new { mensagem = "Projeto deletado com sucesso!" });
         }
 
-
+        [Authorize]
         [HttpGet("ListarProjetos")]
         public IActionResult ListarProjetos()
         {

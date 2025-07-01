@@ -5,7 +5,7 @@ public interface IPagamento
 {
     Task<Payment> CriarPagamentoPixAsync(decimal valor, string emailCliente);
     Task<string> ObterStatusPagamentoAsync(string pagamentoId);
-
-    Task VerificarPagamentosPendentesAsync(); 
+    Task VerificarPagamentosPendentesAsync();
+    Task VerificarPagamentosAprovadosasync();
 
 }

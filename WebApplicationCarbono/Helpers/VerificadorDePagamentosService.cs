@@ -24,6 +24,7 @@ public class VerificadorDePagamentosService : BackgroundService
             try
             {
                 await pagamento.VerificarPagamentosPendentesAsync();
+                await pagamento.VerificarPagamentosAprovadosasync();
             }
             catch (Exception ex)
             {
