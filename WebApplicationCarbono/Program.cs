@@ -41,6 +41,8 @@ builder.Services.AddScoped<ICompraCreditos, CompraCreditosServico>();
 builder.Services.AddScoped<IVendaCredito, VendaCreditoServico>();
 builder.Services.AddScoped<PagamentoServico>();
 builder.Services.AddHostedService<VerificadorDePagamentosService>();
+builder.Services.AddScoped<IVerificacaoEmail, VerificacaoEmailServico>();
+
 
 
 

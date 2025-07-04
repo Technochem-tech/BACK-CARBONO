@@ -11,13 +11,15 @@ namespace WebApplicationCarbono.Serviços
     public class UsuarioServiço : IUsuario
     {
         private readonly string _stringConexao;
+        private readonly IVerificacaoEmail _verificacaoEmail;
 
-        public UsuarioServiço(IConfiguration configuration)
+        public UsuarioServiço(IConfiguration configuration, IVerificacaoEmail verificacaoEmail)
         {
-            _stringConexao = configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("A string de conexão não foi configurada.");
+            _stringConexao = configuration.GetConnectionString("DefaultConnection")!;
+            _verificacaoEmail = verificacaoEmail;
         }
 
-        
+
 
         public void CadastrarUsuario(CadastroUsuarioDto cadastroUsuarioDto)
         {
@@ -34,6 +36,12 @@ namespace WebApplicationCarbono.Serviços
                         string.IsNullOrWhiteSpace(cadastroUsuarioDto.Telefone))
                     {
                         throw new ArgumentException("Todos os campos são obrigatórios.");
+                    }
+
+                    // VERIFICA SE O EMAIL FOI CONFIRMADO ANTES DE CADASTRAR
+                    if (!_verificacaoEmail.EstaConfirmado(cadastroUsuarioDto.Email))
+                    {
+                        throw new Exception("E-mail ainda não foi confirmado. Verifique sua caixa de entrada.");
                     }
 
                     conexao.Open();
@@ -91,7 +99,7 @@ namespace WebApplicationCarbono.Serviços
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }

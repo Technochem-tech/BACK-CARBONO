@@ -39,7 +39,7 @@ namespace Helpers
                 {
                     status = context.Response.StatusCode,
                     mensagem = _env.IsDevelopment() ? ex.Message : "Erro inesperado. Tente novamente.",
-                    detalhes = _env.IsDevelopment() ? ex.StackTrace : null
+                   // detalhes = _env.IsDevelopment() ? ex.StackTrace : null
                 };
 
                 var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };

@@ -16,5 +16,4 @@ obj/
 # Ignorar arquivos do sistema
 *.DS_Store
 Thumbs.db
-
-WebApplicationCarbono/appsettings.json
+appsettings.json
