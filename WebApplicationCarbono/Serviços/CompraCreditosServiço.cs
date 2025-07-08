@@ -1,14 +1,18 @@
-﻿using Npgsql;
+﻿using MimeKit;
+using Npgsql;
 using System.Threading.Tasks;
 using WebApplicationCarbono.Modelos;
+using MailKit.Net.Smtp;
 
 public class CompraCreditosServico : ICompraCreditos
 {
     private readonly string _conexao;
     private readonly PagamentoServico _pagamentoServico;
+    private readonly IConfiguration _config;
 
     public CompraCreditosServico(IConfiguration config, PagamentoServico pagamentoServico)
     {
+        _config = config;
         _conexao = config.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("DefaultConnection");
         _pagamentoServico = pagamentoServico;
     }
@@ -48,6 +52,7 @@ public class CompraCreditosServico : ICompraCreditos
 
         string qrCodePix = pagamento.PointOfInteraction.TransactionData.QrCode;
         string? idPagamento = pagamento.Id?.ToString();
+        string copiaCola = pagamento.PointOfInteraction.TransactionData.TransactionId;
 
         if (idPagamento == null)
             throw new Exception("Erro ao gerar pagamento.");
@@ -61,14 +66,15 @@ public class CompraCreditosServico : ICompraCreditos
 
         using var insertCmd = new NpgsqlCommand(@"
             INSERT INTO saldo_usuario_dinamica
-            (id_usuario, tipo_transacao, valor_creditos, creditos_reservados, data_hora, descricao, id_usuario_destino, status_transacao, id_pagamento_mercadopago, id_projetos)
-            VALUES (@id_usuario, 'compra', 0, @creditos_reservados, NOW(), @descricao, NULL, 'Pendente', @id_pagamento, @id_projetos);", conexao);
+            (id_usuario, tipo_transacao, valor_creditos, creditos_reservados, data_hora, descricao, id_usuario_destino, status_transacao, id_pagamento_mercadopago, id_projetos, copia_cola_pix) )
+            VALUES (@id_usuario, 'compra', 0, @creditos_reservados, NOW(), @descricao, NULL, 'Pendente', @id_pagamento, @id_projetos, @copia_cola_pix));", conexao);
 
         insertCmd.Parameters.AddWithValue("@id_usuario", compra.IdUsuario);
         insertCmd.Parameters.AddWithValue("@creditos_reservados", quantidadeCredito);
         insertCmd.Parameters.AddWithValue("@descricao", $"Compra via Pix - R$ {compra.ValorReais:F2} para {quantidadeCredito:F2} créditos");
         insertCmd.Parameters.AddWithValue("@id_pagamento", idPagamento);
         insertCmd.Parameters.AddWithValue("@id_projetos", compra.IdProjeto);
+        insertCmd.Parameters.AddWithValue("@copia_cola_pix", copiaCola);
         insertCmd.ExecuteNonQuery();
 
         return new CompraCreditoResultado
@@ -126,7 +132,10 @@ public class CompraCreditosServico : ICompraCreditos
             updateCmd.ExecuteNonQuery();
 
             string nomeUsuario = ObterNomeUsuario(conexao, idUsuario);
+            await EnviarEmailConfirmacaoAsync(conexao, idUsuario, pagamentoId, nomeUsuario);
             return $"Compra confirmada. {creditosReservados:F2} créditos adicionados ao usuário {nomeUsuario}.";
+
+            
         }
         else if (status == "expired" && statusTransacao == "Pendente")
         {
@@ -175,4 +184,38 @@ public class CompraCreditosServico : ICompraCreditos
         var resultado = comando.ExecuteScalar();
         return resultado?.ToString() ?? "Desconhecido";
     }
+
+    private async Task EnviarEmailConfirmacaoAsync(NpgsqlConnection conexao, int usuarioId, string pagamentoId, string nomeUsuario)
+    {
+        var comando = new NpgsqlCommand("SELECT email FROM usuarios WHERE id = @id", conexao);
+        comando.Parameters.AddWithValue("id", usuarioId);
+
+        var resultado = await comando.ExecuteScalarAsync();
+        if (resultado == null)
+        {
+            Console.WriteLine($"Usuário com ID {usuarioId} não encontrado para envio de e-mail.");
+            return;
+        }
+
+        var email = resultado.ToString();
+
+        var mensagem = new MimeMessage();
+        mensagem.From.Add(new MailboxAddress("Suporte", _config["EmailSettings:From"]));
+        mensagem.To.Add(new MailboxAddress("", email));
+        mensagem.Subject = "Compra Aprovada - Créditos de Carbono";
+
+        mensagem.Body = new TextPart("html")
+        {
+            Text = $"<p>Olá <strong>{nomeUsuario}</strong>, sua compra foi <strong>aprovada com sucesso</strong>.</p>" +
+                   $"<p>ID do Pagamento: <strong>{pagamentoId}</strong></p>" +
+                   $"<p>Obrigado por sua contribuição ao meio ambiente!</p>"
+        };
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:SmtpPort"]), true);
+        await client.AuthenticateAsync(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
+        await client.SendAsync(mensagem);
+        await client.DisconnectAsync(true);
+    }
+
 }

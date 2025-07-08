@@ -1,18 +1,22 @@
 ﻿using MercadoPago.Client.Common;
 using MercadoPago.Client.Payment;
 using MercadoPago.Resource.Payment;
+using MimeKit;
+using MailKit.Net.Smtp;
 using Npgsql;
 using WebApplicationCarbono.Interface;
 
 public class PagamentoServico : IPagamento
 {
     private readonly string _conexao;
+    private readonly IConfiguration _config;
 
     public PagamentoServico(IConfiguration config)
     {
+        _config = config;
         _conexao = config.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("DefaultConnection");
-
     }
+
     public async Task<Payment> CriarPagamentoPixAsync(decimal valor, string emailCliente)
     {
         var paymentRequest = new PaymentCreateRequest
@@ -21,7 +25,7 @@ public class PagamentoServico : IPagamento
             Description = "Pagamento via Pix - Créditos de Carbono",
             PaymentMethodId = "pix",
             Payer = new PaymentPayerRequest { Email = emailCliente },
-            DateOfExpiration = DateTime.UtcNow.AddMinutes(10) // ← expira em 2 horas
+            DateOfExpiration = DateTime.UtcNow.AddMinutes(10) // ← expira em 10 min
         };
 
         var client = new PaymentClient();
@@ -89,6 +93,8 @@ public class PagamentoServico : IPagamento
 
                 string nomeUsuario = ObterNomeUsuario(conexao, item.UsuarioId);
                 Console.WriteLine($"Compra confirmada para {nomeUsuario}. Créditos: {item.Reservados:F2}");
+
+                await EnviarEmailConfirmacaoAsync(conexao, item.UsuarioId, item.PagamentoId, nomeUsuario);
             }
         }
     }
@@ -165,5 +171,39 @@ public class PagamentoServico : IPagamento
 
         var resultado = comando.ExecuteScalar();
         return resultado?.ToString() ?? "Desconhecido";
+    }
+
+    private async Task EnviarEmailConfirmacaoAsync(NpgsqlConnection conexao, int usuarioId, string pagamentoId, string nomeUsuario)
+    {
+        var comando = new NpgsqlCommand("SELECT email FROM usuarios WHERE id = @id", conexao);
+        comando.Parameters.AddWithValue("id", usuarioId);
+
+        var resultado = await comando.ExecuteScalarAsync();
+        if (resultado == null)
+        {
+            Console.WriteLine($"Usuário com ID {usuarioId} não encontrado para envio de e-mail.");
+            return;
+        }
+
+        var email = resultado.ToString();
+
+        var mensagem = new MimeMessage();
+        mensagem.From.Add(new MailboxAddress("Suporte", _config["EmailSettings:From"]));
+        mensagem.To.Add(new MailboxAddress("", email));
+        mensagem.Subject = "Compra Aprovada - Créditos de Carbono";
+
+        mensagem.Body = new TextPart("html")
+        {
+            Text = $"<p>Olá <strong>{nomeUsuario}</strong>, sua compra foi <strong>aprovada com sucesso</strong>.</p>" +
+                    $"<p>ID do Pagamento: <strong>{pagamentoId}</strong></p>" +
+                    $"<p>Obrigado por sua contribuição ao meio ambiente!</p>"
+        };
+
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:SmtpPort"]), true);
+        await client.AuthenticateAsync(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
+        await client.SendAsync(mensagem);
+        await client.DisconnectAsync(true);
     }
 }
