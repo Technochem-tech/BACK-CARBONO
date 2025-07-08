@@ -52,7 +52,7 @@ public class CompraCreditosServico : ICompraCreditos
 
         string qrCodePix = pagamento.PointOfInteraction.TransactionData.QrCode;
         string? idPagamento = pagamento.Id?.ToString();
-        string copiaCola = pagamento.PointOfInteraction.TransactionData.TransactionId;
+        
 
         if (idPagamento == null)
             throw new Exception("Erro ao gerar pagamento.");
@@ -66,15 +66,15 @@ public class CompraCreditosServico : ICompraCreditos
 
         using var insertCmd = new NpgsqlCommand(@"
             INSERT INTO saldo_usuario_dinamica
-            (id_usuario, tipo_transacao, valor_creditos, creditos_reservados, data_hora, descricao, id_usuario_destino, status_transacao, id_pagamento_mercadopago, id_projetos, copia_cola_pix) )
-            VALUES (@id_usuario, 'compra', 0, @creditos_reservados, NOW(), @descricao, NULL, 'Pendente', @id_pagamento, @id_projetos, @copia_cola_pix));", conexao);
+            (id_usuario, tipo_transacao, valor_creditos, creditos_reservados, data_hora, descricao, id_usuario_destino, status_transacao, id_pagamento_mercadopago, id_projetos, copia_cola_pix)
+            VALUES (@id_usuario, 'compra', 0, @creditos_reservados, NOW(), @descricao, NULL, 'Pendente', @id_pagamento, @id_projetos, @copia_cola_pix);", conexao);
 
         insertCmd.Parameters.AddWithValue("@id_usuario", compra.IdUsuario);
         insertCmd.Parameters.AddWithValue("@creditos_reservados", quantidadeCredito);
         insertCmd.Parameters.AddWithValue("@descricao", $"Compra via Pix - R$ {compra.ValorReais:F2} para {quantidadeCredito:F2} créditos");
         insertCmd.Parameters.AddWithValue("@id_pagamento", idPagamento);
         insertCmd.Parameters.AddWithValue("@id_projetos", compra.IdProjeto);
-        insertCmd.Parameters.AddWithValue("@copia_cola_pix", copiaCola);
+        insertCmd.Parameters.AddWithValue("@copia_cola_pix", qrCodePix);
         insertCmd.ExecuteNonQuery();
 
         return new CompraCreditoResultado

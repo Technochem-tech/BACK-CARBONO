@@ -28,9 +28,9 @@ namespace WebApplicationCarbono.Serviços
             }
 
             var sql = @"
-            SELECT data_hora, valor_creditos, tipo_transacao, descricao, status_transacao 
-            FROM saldo_usuario_dinamica
-            WHERE id_usuario = @IdUsuario";
+                SELECT data_hora, valor_creditos, tipo_transacao, descricao, status_transacao, copia_cola_pix 
+                FROM saldo_usuario_dinamica
+                WHERE id_usuario = @IdUsuario";
 
             if (dataInicio.HasValue)
                 sql += " AND data_hora >= @DataInicio";
@@ -79,8 +79,10 @@ namespace WebApplicationCarbono.Serviços
                     Quantidade = Convert.ToDecimal(reader["valor_creditos"]),
                     Tipo = reader["tipo_transacao"].ToString() ?? "",
                     Descricao = reader["descricao"].ToString() ?? "",
-                    Status = reader["status_transacao"].ToString() ?? ""
+                    Status = reader["status_transacao"].ToString() ?? "",
+                    CopiaColaPix = reader["copia_cola_pix"]?.ToString()
                 });
+
             }
 
             return lista;
