@@ -23,7 +23,7 @@ namespace WebApplicationCarbono.Serviços
             // Se não informar datas, busca dos últimos 7 dias
             if (!dataInicio.HasValue && !dataFim.HasValue)
             {
-                dataInicio = DateTime.UtcNow.AddDays(-7);
+                dataInicio = DateTime.UtcNow.AddDays(-366);
                 dataFim = DateTime.UtcNow;
             }
 
