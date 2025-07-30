@@ -16,4 +16,4 @@ obj/
 # Ignorar arquivos do sistema
 *.DS_Store
 Thumbs.db
-appsettings.json
+ 
