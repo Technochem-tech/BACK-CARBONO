@@ -1,12 +1,12 @@
-using Helpers;
+ï»¿using Helpers;
 using WebApplicationCarbono.Interface;
-using WebApplicationCarbono.Serviços;
+using WebApplicationCarbono.ServiÃ§os;
 using MercadoPago.Config; // <- SDK do Mercado Pago
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Lê o accessToken da configuração
-var mercadoPagoSettings = builder.Configuration.GetSection("MercadoPago").Get<MercadoPagoSettings>() ?? throw new ArgumentNullException("MercadoPago", "As configurações do Mercado Pago não podem ser nulas.");
+// LÃª o accessToken da configuraÃ§Ã£o
+var mercadoPagoSettings = builder.Configuration.GetSection("MercadoPago").Get<MercadoPagoSettings>() ?? throw new ArgumentNullException("MercadoPago", "As configuraÃ§Ãµes do Mercado Pago nÃ£o podem ser nulas.");
 MercadoPagoConfig.AccessToken = mercadoPagoSettings.AccessToken;
 
 // Registra o CORS (antes do Build)
@@ -14,7 +14,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:8080") // porta do seu front-end
+        policy.WithOrigins("http://localhost:8080") //  porta do seu front-end
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -24,19 +24,19 @@ builder.Services.AddCors(options =>
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddSwaggerDocumentation();
 
-// Serviços
+// ServiÃ§os
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddScoped<ISaldo, SaldoServiço>();
-builder.Services.AddScoped<IProjetos, ProjetosServiço>();
-builder.Services.AddScoped<IHistoricoTransacao, HistoricoTransacaoServiço>();
-builder.Services.AddScoped<IUsuario, UsuarioServiço>();
-builder.Services.AddScoped<IAutenticacao, AutenticacaoServiço>();
+builder.Services.AddScoped<ISaldo, SaldoServiÃ§o>();
+builder.Services.AddScoped<IProjetos, ProjetosServiÃ§o>();
+builder.Services.AddScoped<IHistoricoTransacao, HistoricoTransacaoServiÃ§o>();
+builder.Services.AddScoped<IUsuario, UsuarioServiÃ§o>();
+builder.Services.AddScoped<IAutenticacao, AutenticacaoServiÃ§o>();
 builder.Services.AddScoped<IPagamento, PagamentoServico>();
-builder.Services.AddScoped<IRedefinicaoSenha, RedefinicaoSenhaServiço>();
-builder.Services.AddScoped<ITransferirCredito, TransferirCreditoServiço>();
+builder.Services.AddScoped<IRedefinicaoSenha, RedefinicaoSenhaServiÃ§o>();
+builder.Services.AddScoped<ITransferirCredito, TransferirCreditoServiÃ§o>();
 builder.Services.AddScoped<ICompraCreditos, CompraCreditosServico>();
 builder.Services.AddScoped<IVendaCredito, VendaCreditoServico>();
 builder.Services.AddScoped<PagamentoServico>();
