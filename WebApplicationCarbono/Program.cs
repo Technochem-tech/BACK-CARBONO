@@ -14,7 +14,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:8080") //  porta do seu front-end
+        policy.WithOrigins("https://calm-florentine-5489c8.netlify.app") //  porta do seu front-end
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
