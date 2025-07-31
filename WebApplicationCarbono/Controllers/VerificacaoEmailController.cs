@@ -18,18 +18,42 @@ namespace WebApplicationCarbono.Controllers
         [HttpPost("enviar")]
         public IActionResult Enviar([FromBody] string email)
         {
-            _servico.EnviarCodigoVerificacao(email);
-            return Ok("Código enviado para o e-mail.");
+            try
+            {
+                _servico.EnviarCodigoVerificacao(email);
+                return Ok("Código enviado para o e-mail.");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { mensagem = "Erro inesperado. Tente novamente." });
+            }
         }
+
 
         [HttpPost("confirmar")]
         public IActionResult Confirmar([FromBody] VerificarCodigoDto dto)
         {
-            bool confirmado = _servico.ConfirmarCodigo(dto.Email, dto.Codigo);
-            if (!confirmado)
-                return BadRequest("Código inválido ou expirado.");
+            try
+            {
+                bool confirmado = _servico.ConfirmarCodigo(dto.Email, dto.Codigo);
+                if (!confirmado)
+                    return BadRequest(new { mensagem = "Código inválido ou expirado." });
 
-            return Ok("E-mail confirmado com sucesso.");
+                return Ok(new { mensagem = "E-mail confirmado com sucesso." });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { mensagem = "Erro inesperado. Tente novamente." });
+            }
         }
+
     }
 }
