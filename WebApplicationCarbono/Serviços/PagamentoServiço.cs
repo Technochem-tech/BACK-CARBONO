@@ -52,13 +52,13 @@ public class PagamentoServico : IPagamento
         await conexao.OpenAsync();
 
         var comando = new NpgsqlCommand(@"
-        SELECT id, id_pagamento_mercadopago, creditos_reservados, id_projetos, id_usuario
+        SELECT id, id_pagamento_mercadopago, creditos_reservados, id_projetos, id_usuario, valor_creditos, valor_compra
         FROM saldo_usuario_dinamica
         WHERE status_transacao = 'Pendente';", conexao);
 
         using var reader = await comando.ExecuteReaderAsync();
 
-        var pendentes = new List<(int Id, string PagamentoId, decimal Reservados, int ProjetoId, int UsuarioId)>();
+        var pendentes = new List<(int Id, string PagamentoId, decimal Reservados, int ProjetoId, int UsuarioId, decimal ValorCreditos, decimal ValorCompra)>();
 
         while (await reader.ReadAsync())
         {
@@ -67,7 +67,9 @@ public class PagamentoServico : IPagamento
                 reader.GetString(1),
                 reader.GetDecimal(2),
                 reader.IsDBNull(3) ? 0 : reader.GetInt32(3),
-                reader.GetInt32(4)
+                reader.GetInt32(4),
+                reader.GetDecimal(5),
+                reader.IsDBNull(6) ? 0 : reader.GetDecimal(6) // 🔹 pega valor_compra
             ));
         }
 
@@ -79,21 +81,38 @@ public class PagamentoServico : IPagamento
 
             if (status == "approved")
             {
+                // Atualiza saldo_usuario_dinamica
                 using var updateCmd = new NpgsqlCommand(@"
                 UPDATE saldo_usuario_dinamica
                 SET valor_creditos = creditos_reservados,
-                    creditos_reservados = 0,
-                    status_transacao = 'Concluído',
-                    descricao = @descricaoFinal
+                creditos_reservados = 0,
+                status_transacao = 'Concluído',
+                descricao = @descricaoFinal
                 WHERE id = @idRegistro;", conexao);
 
                 updateCmd.Parameters.AddWithValue("@descricaoFinal", $"Compra aprovada via Pix - {item.Reservados:F2} créditos");
                 updateCmd.Parameters.AddWithValue("@idRegistro", item.Id);
                 await updateCmd.ExecuteNonQueryAsync();
 
+                // Criar registro na tabela compra_btc
                 string nomeUsuario = ObterNomeUsuario(conexao, item.UsuarioId);
+
+                using var insertBtcCmd = new NpgsqlCommand(@"
+                INSERT INTO compra_btc 
+                (id_usuario, nome_usuario, valor_reais, quantidade_creditos, quantidade_btc, status, descricao, data_criacao)
+                VALUES 
+                (@idUsuario, @nomeUsuario, @valorReais, @creditos, NULL, 'Pendente', @descricao, NOW());", conexao);
+
+                insertBtcCmd.Parameters.AddWithValue("@idUsuario", item.UsuarioId);
+                insertBtcCmd.Parameters.AddWithValue("@nomeUsuario", nomeUsuario);
+                insertBtcCmd.Parameters.AddWithValue("@valorReais", item.ValorCompra); // 🔹 salva valor da compra
+                insertBtcCmd.Parameters.AddWithValue("@creditos", item.Reservados);
+                insertBtcCmd.Parameters.AddWithValue("@descricao", "Compra de BTC ainda pendente");
+                await insertBtcCmd.ExecuteNonQueryAsync();
+
                 Console.WriteLine($"Compra confirmada para {nomeUsuario}. Créditos: {item.Reservados:F2}");
 
+                // Envia confirmação por e-mail
                 await EnviarEmailConfirmacaoAsync(conexao, item.UsuarioId, item.PagamentoId, nomeUsuario);
             }
         }

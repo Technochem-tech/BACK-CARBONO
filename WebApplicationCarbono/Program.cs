@@ -2,6 +2,7 @@
 using WebApplicationCarbono.Interface;
 using WebApplicationCarbono.Serviços;
 using MercadoPago.Config; // <- SDK do Mercado Pago
+using WebApplicationCarbono.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +44,12 @@ builder.Services.AddScoped<PagamentoServico>();
 builder.Services.AddHostedService<VerificadorDePagamentosService>();
 builder.Services.AddScoped<IVerificacaoEmail, VerificacaoEmailServico>();
 builder.Services.AddScoped<IBinanceServico, BinanceServico>();
+// Registra BinanceServico e CompraBtcServico
+builder.Services.AddSingleton<BinanceServico>();      // ou AddScoped, dependendo da sua necessidade
+builder.Services.AddSingleton<CompraBtcServico>();    // necessário para o BackgroundService
+
+// Registra o BackgroundService
+builder.Services.AddHostedService<VerificadorDeComprasBtcService>();
 
 
 

@@ -66,8 +66,8 @@ public class CompraCreditosServico : ICompraCreditos
 
         using var insertCmd = new NpgsqlCommand(@"
             INSERT INTO saldo_usuario_dinamica
-            (id_usuario, tipo_transacao, valor_creditos, creditos_reservados, data_hora, descricao, id_usuario_destino, status_transacao, id_pagamento_mercadopago, id_projetos, copia_cola_pix)
-            VALUES (@id_usuario, 'compra', 0, @creditos_reservados, NOW(), @descricao, NULL, 'Pendente', @id_pagamento, @id_projetos, @copia_cola_pix);", conexao);
+            (id_usuario, tipo_transacao, valor_creditos, creditos_reservados, data_hora, descricao, id_usuario_destino, status_transacao, id_pagamento_mercadopago, id_projetos, copia_cola_pix, valor_compra)
+            VALUES (@id_usuario, 'compra', 0, @creditos_reservados, NOW(), @descricao, NULL, 'Pendente', @id_pagamento, @id_projetos, @copia_cola_pix, @valor_compra);", conexao);
 
         insertCmd.Parameters.AddWithValue("@id_usuario", compra.IdUsuario);
         insertCmd.Parameters.AddWithValue("@creditos_reservados", quantidadeCredito);
@@ -75,6 +75,7 @@ public class CompraCreditosServico : ICompraCreditos
         insertCmd.Parameters.AddWithValue("@id_pagamento", idPagamento);
         insertCmd.Parameters.AddWithValue("@id_projetos", compra.IdProjeto);
         insertCmd.Parameters.AddWithValue("@copia_cola_pix", qrCodePix);
+        insertCmd.Parameters.AddWithValue("@valor_compra", compra.ValorReais);
         insertCmd.ExecuteNonQuery();
 
         return new CompraCreditoResultado
@@ -93,7 +94,8 @@ public class CompraCreditosServico : ICompraCreditos
         conexao.Open();
 
         using var selectCmd = new NpgsqlCommand(@"
-        SELECT id, descricao, id_usuario, id_projetos, valor_creditos, creditos_reservados, data_hora, status_transacao 
+        SELECT id, descricao, id_usuario, id_projetos, valor_creditos, creditos_reservados, data_hora, status_transacao, valor_compra
+        FROM saldo_usuario_dinamica 
         FROM saldo_usuario_dinamica 
         WHERE id_pagamento_mercadopago = @pagamentoId", conexao);
 
@@ -107,11 +109,12 @@ public class CompraCreditosServico : ICompraCreditos
         int registroId = reader.GetInt32(0);
         string descricao = reader.GetString(1);
         int idUsuario = reader.GetInt32(2);
-        int idProjeto = reader.IsDBNull(3) ? 0 : reader.GetInt32(3); 
+        int idProjeto = reader.IsDBNull(3) ? 0 : reader.GetInt32(3);
         decimal valorCreditos = reader.GetDecimal(4);
         decimal creditosReservados = reader.GetDecimal(5);
         DateTime dataHora = reader.GetDateTime(6);
         string statusTransacao = reader.GetString(7);
+        decimal valorCompra = reader.IsDBNull(8) ? 0 : reader.GetDecimal(8); // 🔹 pega valor_compra
         reader.Close();
 
         if (status == "approved")
@@ -119,6 +122,7 @@ public class CompraCreditosServico : ICompraCreditos
             if (statusTransacao == "Concluído")
                 return "Compra já confirmada.";
 
+            // 🔹 Atualiza saldo_usuario_dinamica
             using var updateCmd = new NpgsqlCommand(@"
             UPDATE saldo_usuario_dinamica
             SET valor_creditos = creditos_reservados,
@@ -131,11 +135,26 @@ public class CompraCreditosServico : ICompraCreditos
             updateCmd.Parameters.AddWithValue("@idRegistro", registroId);
             updateCmd.ExecuteNonQuery();
 
+            // 🔹 Criar registro na tabela compra_btc
             string nomeUsuario = ObterNomeUsuario(conexao, idUsuario);
-            await EnviarEmailConfirmacaoAsync(conexao, idUsuario, pagamentoId, nomeUsuario);
-            return $"Compra confirmada. {creditosReservados:F2} créditos adicionados ao usuário {nomeUsuario}.";
 
-            
+            using var insertBtcCmd = new NpgsqlCommand(@"
+            INSERT INTO compra_btc 
+                (id_usuario, nome_usuario, valor_reais, quantidade_creditos, quantidade_btc, status, descricao, data_criacao)
+            VALUES 
+                (@idUsuario, @nomeUsuario, @valorReais, @creditos, NULL, 'Pendente', @descricao, NOW());", conexao);
+
+            insertBtcCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+            insertBtcCmd.Parameters.AddWithValue("@nomeUsuario", nomeUsuario);
+            insertBtcCmd.Parameters.AddWithValue("@valorReais", valorCompra);
+            insertBtcCmd.Parameters.AddWithValue("@creditos", creditosReservados);
+            insertBtcCmd.Parameters.AddWithValue("@descricao", "Compra de BTC ainda pendente");
+            insertBtcCmd.ExecuteNonQuery();
+
+            // 🔹 Envia confirmação por e-mail
+            await EnviarEmailConfirmacaoAsync(conexao, idUsuario, pagamentoId, nomeUsuario);
+
+            return $"Compra confirmada. {creditosReservados:F2} créditos adicionados ao usuário {nomeUsuario}. Registro pendente de compra de BTC criado.";
         }
         else if (status == "expired" && statusTransacao == "Pendente")
         {
@@ -174,7 +193,8 @@ public class CompraCreditosServico : ICompraCreditos
         return "Pagamento ainda não aprovado.";
     }
 
-   
+
+
 
     private string ObterNomeUsuario(NpgsqlConnection conexao, int usuarioId)
     {

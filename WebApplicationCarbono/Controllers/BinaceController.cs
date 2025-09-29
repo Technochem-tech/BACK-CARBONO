@@ -29,19 +29,11 @@ namespace WebApplicationCarbono.Controllers
             }
         }
 
-        [HttpPost("Comprar-Cripto")]
-        public async Task<IActionResult> CompraCripto([FromQuery] string symbol, decimal quantidade)
+        [HttpPost("Comprar-Cripto-Valor")]
+        public async Task<IActionResult> ComprarPorValor([FromQuery] string symbol, [FromQuery] decimal valorEmReais)
         {
-            try
-            {
-                var Compra = await _binanceServico.ComprarCriptoAsync(symbol, quantidade);
-                return Ok(Compra);
-            }
-            catch (System.Exception ex)
-            {
-
-                return BadRequest(new { erro = ex.Message });
-            }
+            var resultado = await _binanceServico.ComprarPorValorAsync(symbol, valorEmReais);
+            return Ok(resultado);
         }
     }
 }

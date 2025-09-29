@@ -4,7 +4,8 @@ namespace WebApplicationCarbono.Serviços
     public interface IBinanceServico
     {
         Task<Dictionary<string, decimal>> ObterSaldosAsync();
-        Task<string> ComprarCriptoAsync(string symbol, decimal quantidade);
+        Task<string> ComprarPorValorAsync(string symbol, decimal valorEmReais);
+        Task<(decimal valorMinimoReais, decimal quantidadeMinima)> ObterCompraMinimaAsync(string symbol);
     }
 }
 
