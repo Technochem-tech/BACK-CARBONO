@@ -63,17 +63,21 @@ namespace WebApplicationCarbono.Serviços
             // client.Disconnect(true);
             using var client = new SmtpClient();
 
-            // Conecta via TLS na porta 587
-            client.Connect(_config["EmailSettings:SmtpServer"], 587, MailKit.Security.SecureSocketOptions.StartTls);
+            var smtpServer = Environment.GetEnvironmentVariable("SMTP_HOST");
+            var smtpPort = int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587");
+            var smtpUser = Environment.GetEnvironmentVariable("SMTP_USER");
+            var smtpPass = Environment.GetEnvironmentVariable("SMTP_PASS");
+
+            // Conecta via TLS
+            client.Connect(smtpServer, smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
 
             // Autentica
-            client.Authenticate(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
+            client.Authenticate(smtpUser, smtpPass);
 
             // Envia a mensagem
             client.Send(mensagem);
-
-            // Desconecta
             client.Disconnect(true);
+
         }
 
         public bool ConfirmarCodigo(string email, string codigo)
