@@ -56,10 +56,23 @@ namespace WebApplicationCarbono.Serviços
                 Text = $"Seu código de verificação é: {codigo}"
             };
 
+            //using var client = new SmtpClient();
+            //client.Connect(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:SmtpPort"]), true);
+            //client.Authenticate(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
+            // client.Send(mensagem);
+            // client.Disconnect(true);
             using var client = new SmtpClient();
-            client.Connect(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:SmtpPort"]), true);
+
+            // Conecta via TLS na porta 587
+            client.Connect(_config["EmailSettings:SmtpServer"], 587, MailKit.Security.SecureSocketOptions.StartTls);
+
+            // Autentica
             client.Authenticate(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
+
+            // Envia a mensagem
             client.Send(mensagem);
+
+            // Desconecta
             client.Disconnect(true);
         }
 
