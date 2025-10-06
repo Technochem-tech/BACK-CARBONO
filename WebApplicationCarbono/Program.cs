@@ -51,6 +51,7 @@ builder.Services.AddSingleton<CompraBtcServico>();    // necessário para o Back
 // Registra o BackgroundService
 builder.Services.AddHostedService<VerificadorDeComprasBtcService>();
 
+builder.Services.AddSingleton<GmailServico>();
 
 
 
