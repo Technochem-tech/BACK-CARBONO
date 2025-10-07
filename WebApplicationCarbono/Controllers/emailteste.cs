@@ -15,11 +15,21 @@ namespace WebApplicationCarbono.Controllers
             _gmail = gmail;
         }
 
-        [HttpGet]
-        public IActionResult TestarEnvio()
+        // Classe modelo para receber os dados do corpo da requisição
+        public class EmailRequest
         {
-            _gmail.EnviarEmail("marlonjose150404@gmail.com", "Teste", "Esse é um teste de envio Gmail API");
-            return Ok("E-mail enviado!");
+            public string Destinatario { get; set; } = string.Empty;
+        }
+
+        [HttpPost("teste")]
+        public IActionResult TestarEnvio([FromBody] EmailRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Destinatario))
+                return BadRequest("O campo 'Destinatario' é obrigatório.");
+
+            _gmail.EnviarEmail(request.Destinatario, "Teste", "Esse é um teste de envio Gmail API");
+
+            return Ok($"E-mail enviado para {request.Destinatario}!");
         }
     }
 }

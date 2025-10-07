@@ -11,11 +11,13 @@ namespace WebApplicationCarbono.Serviços
     {
         private readonly string _stringConexao;
         private readonly IConfiguration _config;
+        private readonly GmailServico _gmailServico;
 
-        public VerificacaoEmailServico(IConfiguration config)
+        public VerificacaoEmailServico(IConfiguration config, GmailServico gmailServico)
         {
             _config = config;
             _stringConexao = config.GetConnectionString("DefaultConnection")!;
+            _gmailServico = new GmailServico();
         }
 
         public void EnviarCodigoVerificacao(string email)
@@ -47,20 +49,27 @@ namespace WebApplicationCarbono.Serviços
             comando.Parameters.AddWithValue("@Validade", DateTime.UtcNow.AddMinutes(10));
             comando.ExecuteNonQuery();
 
-            var mensagem = new MimeMessage();
-            mensagem.From.Add(new MailboxAddress("Sistema", _config["EmailSettings:From"]));
-            mensagem.To.Add(new MailboxAddress("", email));
-            mensagem.Subject = "Código de verificação";
-            mensagem.Body = new TextPart("plain")
-            {
-                Text = $"Seu código de verificação é: {codigo}"
-            };
+            // Envia o email usando o serviço GmailServico
+            _gmailServico.EnviarEmail(
+                email,
+                "Código de verificação",
+                $"Seu código de verificação é: {codigo}"
+            );
 
-            using var client = new SmtpClient();
-            client.Connect(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:SmtpPort"]), true);
-            client.Authenticate(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
-            client.Send(mensagem);
-            client.Disconnect(true);
+            //var mensagem = new MimeMessage();
+            //mensagem.From.Add(new MailboxAddress("Sistema", _config["EmailSettings:From"]));
+            //mensagem.To.Add(new MailboxAddress("", email));
+            //mensagem.Subject = "Código de verificação";
+            //mensagem.Body = new TextPart("plain")
+            //{
+            //    Text = $"Seu código de verificação é: {codigo}"
+            //};
+
+            //using var client = new SmtpClient();
+            //client.Connect(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:SmtpPort"]), true);
+            //client.Authenticate(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
+            //client.Send(mensagem);
+            //client.Disconnect(true);
 
         }
 

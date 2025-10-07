@@ -11,11 +11,13 @@ namespace WebApplicationCarbono.Serviços
     {
         private readonly string _stringConexao;
         private readonly IConfiguration _configuracao;
+        private readonly GmailServico _gmailServico;
 
-        public RedefinicaoSenhaServiço(IConfiguration configuracao)
+        public RedefinicaoSenhaServiço(IConfiguration configuracao, GmailServico gmailServico)
         {
             _configuracao = configuracao;
             _stringConexao = configuracao.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("DefaultConnection", "A string de conexão não foi configurada.");
+            _gmailServico = gmailServico;
         }
 
         public void EnviarEmailRedefinicao(EditarSenhaRequestDto dto)
@@ -39,28 +41,38 @@ namespace WebApplicationCarbono.Serviços
                 comando.Parameters.AddWithValue("@Validade", DateTime.Now.AddHours(1));
                 comando.ExecuteNonQuery();
             }
-            // Cria o email
-            var mensagem = new MimeMessage();
-            mensagem.From.Add(new MailboxAddress("Suporte", _configuracao["EmailSettings:From"]));
-            mensagem.To.Add(new MailboxAddress("", dto.Email));
-            mensagem.Subject = "Redefinição de senha";
 
-            // Cria o link de redefinição de senha
-            string baseUrl = _configuracao["FrontendUrl"] ?? "http://localhost:8080";
-            string url = $"{baseUrl}/redefinir-senha?token={token}";
+            // Envia o email usando o serviço GmailServico
+            _gmailServico.EnviarEmail(
+                dto.Email,
+                "Redefinição de senha",
+                $"Você solicitou redefinição de senha. Clique no link abaixo para alterar sua senha:\n\n" +
+                $"{_configuracao["FrontendUrl"] ?? "http://localhost:8080"}/redefinir-senha?token={token}\n\n" +
+                "Se não foi você, ignore este email."
+            );
 
-            mensagem.Body = new TextPart("html")
-            {
-                Text = $"<p>Você solicitou redefinição de senha. Clique no link abaixo para alterar sua senha:</p>" +
-                $"<p><a href=\"{url}\">{url}</a></p>" +
-                $"<p>Se não foi você, ignore este email.</p>"
-            };
-            // Envia o email
-            using var client = new SmtpClient();
-            client.Connect(_configuracao["EmailSettings:SmtpServer"], int.Parse(_configuracao["EmailSettings:SmtpPort"]), true);
-            client.Authenticate(_configuracao["EmailSettings:Username"], _configuracao["EmailSettings:Password"]);
-            client.Send(mensagem);
-            client.Disconnect(true);
+            //// Cria o email
+            //var mensagem = new MimeMessage();
+            //mensagem.From.Add(new MailboxAddress("Suporte", _configuracao["EmailSettings:From"]));
+            //mensagem.To.Add(new MailboxAddress("", dto.Email));
+            //mensagem.Subject = "Redefinição de senha";
+
+            //// Cria o link de redefinição de senha
+            //string baseUrl = _configuracao["FrontendUrl"] ?? "http://localhost:8080";
+            //string url = $"{baseUrl}/redefinir-senha?token={token}";
+
+            //mensagem.Body = new TextPart("html")
+            //{
+            //    Text = $"<p>Você solicitou redefinição de senha. Clique no link abaixo para alterar sua senha:</p>" +
+            //    $"<p><a href=\"{url}\">{url}</a></p>" +
+            //    $"<p>Se não foi você, ignore este email.</p>"
+            //};
+            //// Envia o email
+            //using var client = new SmtpClient();
+            //client.Connect(_configuracao["EmailSettings:SmtpServer"], int.Parse(_configuracao["EmailSettings:SmtpPort"]), true);
+            //client.Authenticate(_configuracao["EmailSettings:Username"], _configuracao["EmailSettings:Password"]);
+            //client.Send(mensagem);
+            //client.Disconnect(true);
         }
 
 

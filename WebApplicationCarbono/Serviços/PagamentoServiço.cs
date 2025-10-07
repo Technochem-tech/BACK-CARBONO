@@ -5,16 +5,19 @@ using MimeKit;
 using MailKit.Net.Smtp;
 using Npgsql;
 using WebApplicationCarbono.Interface;
+using WebApplicationCarbono.Serviços;
 
 public class PagamentoServico : IPagamento
 {
     private readonly string _conexao;
     private readonly IConfiguration _config;
+    private readonly GmailServico _gmailServico;
 
-    public PagamentoServico(IConfiguration config)
+    public PagamentoServico(IConfiguration config, GmailServico gmailServico)
     {
         _config = config;
         _conexao = config.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("DefaultConnection");
+        _gmailServico = gmailServico;
     }
 
     public async Task<Payment> CriarPagamentoPixAsync(decimal valor, string emailCliente)
@@ -205,24 +208,33 @@ public class PagamentoServico : IPagamento
         }
 
         var email = resultado.ToString();
+        _gmailServico.EnviarEmail(
+            email,
+            "Compra Aprovada - Créditos de Carbono",
+            $"<p>Olá <strong>{nomeUsuario}</strong>, sua compra foi <strong>aprovada com sucesso</strong>.</p>" +
+            $"<p>ID do Pagamento: <strong>{pagamentoId}</strong></p>" +
+            $"<p>Obrigado por sua contribuição ao meio ambiente!</p>"
+        );
 
-        var mensagem = new MimeMessage();
-        mensagem.From.Add(new MailboxAddress("Suporte", _config["EmailSettings:From"]));
-        mensagem.To.Add(new MailboxAddress("", email));
-        mensagem.Subject = "Compra Aprovada - Créditos de Carbono";
+        //var email = resultado.ToString();
 
-        mensagem.Body = new TextPart("html")
-        {
-            Text = $"<p>Olá <strong>{nomeUsuario}</strong>, sua compra foi <strong>aprovada com sucesso</strong>.</p>" +
-                    $"<p>ID do Pagamento: <strong>{pagamentoId}</strong></p>" +
-                    $"<p>Obrigado por sua contribuição ao meio ambiente!</p>"
-        };
+        //var mensagem = new MimeMessage();
+        //mensagem.From.Add(new MailboxAddress("Suporte", _config["EmailSettings:From"]));
+        //mensagem.To.Add(new MailboxAddress("", email));
+        //mensagem.Subject = "Compra Aprovada - Créditos de Carbono";
+
+        //mensagem.Body = new TextPart("html")
+        //{
+        //    Text = $"<p>Olá <strong>{nomeUsuario}</strong>, sua compra foi <strong>aprovada com sucesso</strong>.</p>" +
+        //            $"<p>ID do Pagamento: <strong>{pagamentoId}</strong></p>" +
+        //            $"<p>Obrigado por sua contribuição ao meio ambiente!</p>"
+        //};
 
 
-        using var client = new SmtpClient();
-        await client.ConnectAsync(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:SmtpPort"]), true);
-        await client.AuthenticateAsync(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
-        await client.SendAsync(mensagem);
-        await client.DisconnectAsync(true);
+        //using var client = new SmtpClient();
+        //await client.ConnectAsync(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:SmtpPort"]), true);
+        //await client.AuthenticateAsync(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
+        //await client.SendAsync(mensagem);
+        //await client.DisconnectAsync(true);
     }
 }

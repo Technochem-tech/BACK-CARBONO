@@ -21,15 +21,11 @@ namespace WebApplicationCarbono.Controllers
             try
             {
                 _servico.EnviarCodigoVerificacao(email);
-                return Ok("Código enviado para o e-mail.");
+                return Ok(new { mensagem = "Codigo de Verificação Enviado Para Email Informado" });
             }
-            catch (ArgumentException ex)
+            catch (System.Exception ex)
             {
                 return BadRequest(new { mensagem = ex.Message });
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { mensagem = "Erro inesperado. Tente novamente." });
             }
         }
 
