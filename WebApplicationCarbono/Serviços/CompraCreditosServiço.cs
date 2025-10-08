@@ -54,7 +54,7 @@ public class CompraCreditosServico : ICompraCreditos
 
         string qrCodePix = pagamento.PointOfInteraction.TransactionData.QrCode;
         string? idPagamento = pagamento.Id?.ToString();
-        
+
 
         if (idPagamento == null)
             throw new Exception("Erro ao gerar pagamento.");
@@ -97,7 +97,6 @@ public class CompraCreditosServico : ICompraCreditos
 
         using var selectCmd = new NpgsqlCommand(@"
         SELECT id, descricao, id_usuario, id_projetos, valor_creditos, creditos_reservados, data_hora, status_transacao, valor_compra
-        FROM saldo_usuario_dinamica 
         FROM saldo_usuario_dinamica 
         WHERE id_pagamento_mercadopago = @pagamentoId", conexao);
 
@@ -144,7 +143,7 @@ public class CompraCreditosServico : ICompraCreditos
             INSERT INTO compra_btc 
                 (id_usuario, nome_usuario, valor_reais, quantidade_creditos, quantidade_btc, status, descricao, data_criacao)
             VALUES 
-                (@idUsuario, @nomeUsuario, @valorReais, @creditos, NULL, 'Pendente', @descricao, (NOW() AT TIME ZONE 'America/Sao_Paulo');", conexao);
+                (@idUsuario, @nomeUsuario, @valorReais, @creditos, NULL, 'Pendente', @descricao, (NOW() AT TIME ZONE 'America/Sao_Paulo'));", conexao);
 
             insertBtcCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
             insertBtcCmd.Parameters.AddWithValue("@nomeUsuario", nomeUsuario);
