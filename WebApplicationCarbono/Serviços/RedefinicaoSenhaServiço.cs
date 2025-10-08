@@ -56,7 +56,7 @@ namespace WebApplicationCarbono.Serviços
                 "Se não foi você, ignore este e-mail.";
 
             // Envia o e-mail
-            _gmailServico.EnviarEmail(dto.Email, "Redefinição de senha", corpoEmail);
+            _gmailServico.EnviarEmailAsync(dto.Email, "Redefinição de senha", corpoEmail);
 
 
             //// Cria o email

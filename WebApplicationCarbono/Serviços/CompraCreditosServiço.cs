@@ -3,18 +3,20 @@ using Npgsql;
 using System.Threading.Tasks;
 using WebApplicationCarbono.Modelos;
 using MailKit.Net.Smtp;
+using WebApplicationCarbono.Serviços;
 
 public class CompraCreditosServico : ICompraCreditos
 {
     private readonly string _conexao;
     private readonly PagamentoServico _pagamentoServico;
     private readonly IConfiguration _config;
-
-    public CompraCreditosServico(IConfiguration config, PagamentoServico pagamentoServico)
+    private readonly GmailServico _gmailServico;
+    public CompraCreditosServico(IConfiguration config, PagamentoServico pagamentoServico, GmailServico gmailServico)
     {
         _config = config;
         _conexao = config.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("DefaultConnection");
         _pagamentoServico = pagamentoServico;
+        _gmailServico = gmailServico;
     }
     // Método para iniciar a compra de créditos
     public CompraCreditoResultado IniciarCompraCredito(ComprarCredito compra)
@@ -67,7 +69,7 @@ public class CompraCreditosServico : ICompraCreditos
         using var insertCmd = new NpgsqlCommand(@"
             INSERT INTO saldo_usuario_dinamica
             (id_usuario, tipo_transacao, valor_creditos, creditos_reservados, data_hora, descricao, id_usuario_destino, status_transacao, id_pagamento_mercadopago, id_projetos, copia_cola_pix, valor_compra)
-            VALUES (@id_usuario, 'compra', 0, @creditos_reservados, NOW(), @descricao, NULL, 'Pendente', @id_pagamento, @id_projetos, @copia_cola_pix, @valor_compra);", conexao);
+            VALUES (@id_usuario, 'compra', 0, @creditos_reservados, (NOW() AT TIME ZONE 'America/Sao_Paulo'), @descricao, NULL, 'Pendente', @id_pagamento, @id_projetos, @copia_cola_pix, @valor_compra);", conexao);
 
         insertCmd.Parameters.AddWithValue("@id_usuario", compra.IdUsuario);
         insertCmd.Parameters.AddWithValue("@creditos_reservados", quantidadeCredito);
@@ -142,7 +144,7 @@ public class CompraCreditosServico : ICompraCreditos
             INSERT INTO compra_btc 
                 (id_usuario, nome_usuario, valor_reais, quantidade_creditos, quantidade_btc, status, descricao, data_criacao)
             VALUES 
-                (@idUsuario, @nomeUsuario, @valorReais, @creditos, NULL, 'Pendente', @descricao, NOW());", conexao);
+                (@idUsuario, @nomeUsuario, @valorReais, @creditos, NULL, 'Pendente', @descricao, (NOW() AT TIME ZONE 'America/Sao_Paulo');", conexao);
 
             insertBtcCmd.Parameters.AddWithValue("@idUsuario", idUsuario);
             insertBtcCmd.Parameters.AddWithValue("@nomeUsuario", nomeUsuario);
@@ -219,23 +221,31 @@ public class CompraCreditosServico : ICompraCreditos
 
         var email = resultado.ToString();
 
-        var mensagem = new MimeMessage();
-        mensagem.From.Add(new MailboxAddress("Suporte", _config["EmailSettings:From"]));
-        mensagem.To.Add(new MailboxAddress("", email));
-        mensagem.Subject = "Compra Aprovada - Créditos de Carbono";
+        await _gmailServico.EnviarEmailAsync(
+        email,
+        "Compra Aprovada - Créditos de Carbono",
+        $"<p>Olá <strong>{nomeUsuario}</strong>, sua compra foi <strong>aprovada com sucesso</strong>.</p>" +
+        $"<p>ID do Pagamento: <strong>{pagamentoId}</strong></p>" +
+        $"<p>Obrigado por sua contribuição ao meio ambiente!</p>"
+        );
 
-        mensagem.Body = new TextPart("html")
-        {
-            Text = $"<p>Olá <strong>{nomeUsuario}</strong>, sua compra foi <strong>aprovada com sucesso</strong>.</p>" +
-                   $"<p>ID do Pagamento: <strong>{pagamentoId}</strong></p>" +
-                   $"<p>Obrigado por sua contribuição ao meio ambiente!</p>"
-        };
+        //var mensagem = new MimeMessage();
+        //mensagem.From.Add(new MailboxAddress("Suporte", _config["EmailSettings:From"]));
+        //mensagem.To.Add(new MailboxAddress("", email));
+        //mensagem.Subject = "Compra Aprovada - Créditos de Carbono";
 
-        using var client = new SmtpClient();
-        await client.ConnectAsync(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:SmtpPort"]), true);
-        await client.AuthenticateAsync(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
-        await client.SendAsync(mensagem);
-        await client.DisconnectAsync(true);
+        //mensagem.Body = new TextPart("html")
+        //{
+        //    Text = $"<p>Olá <strong>{nomeUsuario}</strong>, sua compra foi <strong>aprovada com sucesso</strong>.</p>" +
+        //           $"<p>ID do Pagamento: <strong>{pagamentoId}</strong></p>" +
+        //           $"<p>Obrigado por sua contribuição ao meio ambiente!</p>"
+        //};
+
+        //using var client = new SmtpClient();
+        //await client.ConnectAsync(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:SmtpPort"]), true);
+        //await client.AuthenticateAsync(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
+        //await client.SendAsync(mensagem);
+        //await client.DisconnectAsync(true);
     }
 
 }

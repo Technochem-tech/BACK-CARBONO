@@ -50,7 +50,7 @@ namespace WebApplicationCarbono.Serviços
             comando.ExecuteNonQuery();
 
             // Envia o email usando o serviço GmailServico
-            _gmailServico.EnviarEmail(
+            _gmailServico.EnviarEmailAsync(
                 email,
                 "Código de verificação",
                 $"Seu código de verificação é: {codigo}"

@@ -27,7 +27,7 @@ namespace WebApplicationCarbono.Controllers
             if (string.IsNullOrWhiteSpace(request.Destinatario))
                 return BadRequest("O campo 'Destinatario' é obrigatório.");
 
-            _gmail.EnviarEmail(request.Destinatario, "Teste", "Esse é um teste de envio Gmail API");
+            _gmail.EnviarEmailAsync(request.Destinatario, "Teste", "Esse é um teste de envio Gmail API");
 
             return Ok($"E-mail enviado para {request.Destinatario}!");
         }

@@ -208,7 +208,7 @@ public class PagamentoServico : IPagamento
         }
 
         var email = resultado.ToString();
-        _gmailServico.EnviarEmail(
+        await _gmailServico.EnviarEmailAsync(
         email,
         "Compra Aprovada - Créditos de Carbono",
         $"<p>Olá <strong>{nomeUsuario}</strong>, sua compra foi <strong>aprovada com sucesso</strong>.</p>" +
