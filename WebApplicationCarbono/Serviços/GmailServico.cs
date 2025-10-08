@@ -45,7 +45,7 @@ namespace WebApplicationCarbono.Serviços
             mensagem.From.Add(new MailboxAddress("Sistema", "suporteenvioemail00000@gmail.com"));
             mensagem.To.Add(new MailboxAddress("", destinatario));
             mensagem.Subject = assunto;
-            mensagem.Body = new TextPart("plain") { Text = corpo };
+            mensagem.Body = new TextPart("html") { Text = corpo };
 
             using (var memory = new MemoryStream())
             {

@@ -209,12 +209,13 @@ public class PagamentoServico : IPagamento
 
         var email = resultado.ToString();
         _gmailServico.EnviarEmail(
-            email,
-            "Compra Aprovada - Créditos de Carbono",
-            $"<p>Olá <strong>{nomeUsuario}</strong>, sua compra foi <strong>aprovada com sucesso</strong>.</p>" +
-            $"<p>ID do Pagamento: <strong>{pagamentoId}</strong></p>" +
-            $"<p>Obrigado por sua contribuição ao meio ambiente!</p>"
+        email,
+        "Compra Aprovada - Créditos de Carbono",
+        $"<p>Olá <strong>{nomeUsuario}</strong>, sua compra foi <strong>aprovada com sucesso</strong>.</p>" +
+        $"<p>ID do Pagamento: <strong>{pagamentoId}</strong></p>" +
+        $"<p>Obrigado por sua contribuição ao meio ambiente!</p>"
         );
+
 
         //var email = resultado.ToString();
 

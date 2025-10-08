@@ -43,13 +43,21 @@ namespace WebApplicationCarbono.Serviços
             }
 
             // Envia o email usando o serviço GmailServico
-            _gmailServico.EnviarEmail(
-                dto.Email,
-                "Redefinição de senha",
-                $"Você solicitou redefinição de senha. Clique no link abaixo para alterar sua senha:\n\n" +
-                $"{_configuracao["FrontendUrl"] ?? "http://localhost:8080"}/redefinir-senha?token={token}\n\n" +
-                "Se não foi você, ignore este email."
-            );
+            
+            string baseUrl = _configuracao["FrontendUrl"]?.TrimEnd('/') ?? "http://localhost:8080";
+
+            // Codifica o token para não quebrar a URL
+            string linkRedefinicao = $"{baseUrl}/redefinir-senha?token={Uri.EscapeDataString(token)}";
+
+            // Monta o corpo do e-mail
+            string corpoEmail =
+                "Você solicitou redefinição de senha. Clique no link abaixo para alterar sua senha:\n\n" +
+                $"{linkRedefinicao}\n\n" +
+                "Se não foi você, ignore este e-mail.";
+
+            // Envia o e-mail
+            _gmailServico.EnviarEmail(dto.Email, "Redefinição de senha", corpoEmail);
+
 
             //// Cria o email
             //var mensagem = new MimeMessage();
