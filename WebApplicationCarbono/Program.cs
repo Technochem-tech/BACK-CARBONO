@@ -15,9 +15,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("https://incandescent-sherbet-54d32d.netlify.app") //  porta do seu front-end
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins("https://incandescent-sherbet-54d32d.netlify.app")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+        //policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+
     });
 });
 

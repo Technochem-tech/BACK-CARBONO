@@ -30,10 +30,13 @@ namespace WebApplicationCarbono.Serviços
             using (var conexao = new NpgsqlConnection(_stringConexao))
             {
                 conexao.Open();
+
+                string emailLower = loginDto.Email.Trim().ToLower();
+
                 var query = "SELECT id, senha FROM usuarios WHERE email = @Email";
                 using (var comando = new NpgsqlCommand(query, conexao))
                 {
-                    comando.Parameters.AddWithValue("@Email", loginDto.Email);
+                    comando.Parameters.AddWithValue("@Email", emailLower);
 
                     using (var leitor = comando.ExecuteReader())
                     {
@@ -53,7 +56,8 @@ namespace WebApplicationCarbono.Serviços
             // Verifica a senha usando o mesmo algoritmo BCrypt
             if (!BCrypt.Net.BCrypt.Verify(loginDto.Senha, senhaHashBanco))
             {
-                throw new Exception("Senha inválida.");
+                throw new Exception("Usuário ou senha incorretos.");
+
             }
 
             // Geração do token JWT

@@ -47,7 +47,7 @@ namespace WebApplicationCarbono.Serviços
             string baseUrl = _configuracao["FrontendUrl"]?.TrimEnd('/') ?? "http://localhost:8080";
 
             // Codifica o token para não quebrar a URL
-            string linkRedefinicao = $"{baseUrl}/redefinir-senha?token={Uri.EscapeDataString(token)}";
+            string linkRedefinicao = $"{baseUrl}/reset-password?token={Uri.EscapeDataString(token)}";
 
             // Monta o corpo do e-mail
             string corpoEmail =
