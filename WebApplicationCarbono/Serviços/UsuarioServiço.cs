@@ -38,23 +38,30 @@ namespace WebApplicationCarbono.Serviços
                         throw new ArgumentException("Todos os campos são obrigatórios.");
                     }
 
-                    // VERIFICA SE O EMAIL FOI CONFIRMADO ANTES DE CADASTRAR
+                    // verifica se o e-mail foi confirmado antes de cadastrar
                     if (!_verificacaoEmail.EstaConfirmado(cadastroUsuarioDto.Email))
                     {
                         throw new Exception("E-mail ainda não foi confirmado. Verifique sua caixa de entrada.");
                     }
 
+                    // remove tudo que não for número do telefone
+                    string somenteNumerosTelefone = new string(cadastroUsuarioDto.Telefone.Where(char.IsDigit).ToArray());
+
+                    // valida se o telefone tem exatamente 11 dígitos
+                    if (somenteNumerosTelefone.Length != 11)
+                    {
+                        throw new ArgumentException("O telefone deve conter exatamente 11 números (ex: 00.9.0000-0000).");
+                    }
+
                     conexao.Open();
 
-                    // verifca se já existe um email cadastrado
+                    // verifica se já existe um email cadastrado
                     var comandoVerificacao = new NpgsqlCommand("SELECT COUNT(*) FROM usuarios WHERE email = @Email", conexao);
                     comandoVerificacao.Parameters.AddWithValue("@Email", cadastroUsuarioDto.Email);
                     int count = Convert.ToInt32(comandoVerificacao.ExecuteScalar());
 
                     if (count > 0)
-                    {
-                        throw new ArgumentException("Já existe um usuário cadastrado com este email.");
-                    }
+                        throw new ArgumentException("Já existe um usuário cadastrado com este e-mail.");
 
                     // verifica se já existe um CNPJ cadastrado
                     var comandoVerificacaoCNPJ = new NpgsqlCommand("SELECT COUNT(*) FROM usuarios WHERE cnpj = @CNPJ", conexao);
@@ -62,38 +69,33 @@ namespace WebApplicationCarbono.Serviços
                     int countCNPJ = Convert.ToInt32(comandoVerificacaoCNPJ.ExecuteScalar());
 
                     if (countCNPJ > 0)
-                    {
                         throw new ArgumentException("Já existe um usuário cadastrado com este CNPJ.");
-                    }
 
                     // verifica se já existe um telefone cadastrado
                     var comandoVerificacaoTelefone = new NpgsqlCommand("SELECT COUNT(*) FROM usuarios WHERE telefone = @Telefone", conexao);
-                    comandoVerificacaoTelefone.Parameters.AddWithValue("@Telefone", cadastroUsuarioDto.Telefone);
+                    comandoVerificacaoTelefone.Parameters.AddWithValue("@Telefone", somenteNumerosTelefone);
                     int countTelefone = Convert.ToInt32(comandoVerificacaoTelefone.ExecuteScalar());
 
                     if (countTelefone > 0)
-                    {
                         throw new ArgumentException("Já existe um usuário cadastrado com este telefone.");
-                    }
 
-
-                    // Criptografa a senha antes de salvar no banco de dados
+                    // criptografa a senha antes de salvar no banco de dados
                     string senhaHash = BCrypt.Net.BCrypt.HashPassword(cadastroUsuarioDto.Senha);
 
-                    // Insere o novo usuário no banco de dados
+                    // insere o novo usuário no banco de dados
                     string query = @"
-                        INSERT INTO usuarios (nome, email, senha, empresa, cnpj, telefone)
-                        VALUES (@nome, @email, @senha, @empresa, @cnpj, @telefone);
-                    ";
+                     INSERT INTO usuarios (nome, email, senha, empresa, cnpj, telefone)
+                     VALUES (@nome, @Email, @senha, @empresa, @CNPJ, @Telefone);
+                      ";
 
                     using (var comando = new NpgsqlCommand(query, conexao))
                     {
                         comando.Parameters.AddWithValue("@nome", cadastroUsuarioDto.Nome);
-                        comando.Parameters.AddWithValue("@email", cadastroUsuarioDto.Email);
+                        comando.Parameters.AddWithValue("@Email", cadastroUsuarioDto.Email);
                         comando.Parameters.AddWithValue("@senha", senhaHash);
                         comando.Parameters.AddWithValue("@empresa", cadastroUsuarioDto.Empresa);
-                        comando.Parameters.AddWithValue("@cnpj", cadastroUsuarioDto.CNPJ);
-                        comando.Parameters.AddWithValue("@telefone", cadastroUsuarioDto.Telefone);
+                        comando.Parameters.AddWithValue("@CNPJ", cadastroUsuarioDto.CNPJ);
+                        comando.Parameters.AddWithValue("@Telefone", somenteNumerosTelefone);
 
                         comando.ExecuteNonQuery();
                     }
@@ -105,34 +107,40 @@ namespace WebApplicationCarbono.Serviços
             }
         }
 
+
         public void EditarTelefone(int id, EditarTelefoneUsuarioDto dto)
         {
             using var conexao = new NpgsqlConnection(_stringConexao);
             conexao.Open();
 
-            // verifica se já existe um telefone cadastrado
-            var comandoVerificacaoTelefone = new NpgsqlCommand("SELECT COUNT(*) FROM usuarios WHERE telefone = @Telefone", conexao);
-            comandoVerificacaoTelefone.Parameters.AddWithValue("@Telefone", dto.telefone);
+            // remove tudo que não for número
+            string somenteNumeros = new string(dto.telefone.Where(char.IsDigit).ToArray());
+
+            // valida se tem exatamente 11 números
+            if (somenteNumeros.Length != 11)
+                throw new ArgumentException("O telefone deve conter exatamente 11 números (ex: 81999999999).");
+
+            // verifica se já existe um telefone igual no banco
+            var comandoVerificacaoTelefone = new NpgsqlCommand(
+                "SELECT COUNT(*) FROM usuarios WHERE telefone = @Telefone", conexao);
+            comandoVerificacaoTelefone.Parameters.AddWithValue("@Telefone", somenteNumeros);
             int countTelefone = Convert.ToInt32(comandoVerificacaoTelefone.ExecuteScalar());
 
             if (countTelefone > 0)
-            {
                 throw new ArgumentException("Já existe um usuário cadastrado com este telefone.");
-            }
 
-
-            var comando = new NpgsqlCommand("UPDATE usuarios SET telefone = @Telefone WHERE id = @Id", conexao);
-            comando.Parameters.AddWithValue("@Telefone", dto.telefone);
+            // atualiza o telefone
+            var comando = new NpgsqlCommand(
+                "UPDATE usuarios SET telefone = @Telefone WHERE id = @Id", conexao);
+            comando.Parameters.AddWithValue("@Telefone", somenteNumeros);
             comando.Parameters.AddWithValue("@Id", id);
 
             int linhasAfetadas = comando.ExecuteNonQuery();
+
             if (linhasAfetadas == 0)
-            {
                 throw new Exception("Telefone não alterado.");
-            }
-
-
         }
+
 
         public BuscarUsuarioModelo? GetUsuario(int IdUsuario)
         {

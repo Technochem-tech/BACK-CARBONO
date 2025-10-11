@@ -1,76 +1,86 @@
-﻿using MimeKit;
-using MailKit.Net.Smtp;
-using Npgsql;
+﻿using System.Net;
+using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
+using Npgsql;
 using WebApplicationCarbono.Interface;
-using WebApplicationCarbono.Dtos;
 
 namespace WebApplicationCarbono.Serviços
 {
     public class VerificacaoEmailServico : IVerificacaoEmail
     {
         private readonly string _stringConexao;
-        private readonly IConfiguration _config;
         private readonly GmailServico _gmailServico;
 
         public VerificacaoEmailServico(IConfiguration config, GmailServico gmailServico)
         {
-            _config = config;
             _stringConexao = config.GetConnectionString("DefaultConnection")!;
-            _gmailServico = new GmailServico();
+            _gmailServico = gmailServico;
         }
 
         public void EnviarCodigoVerificacao(string email)
         {
+            // 1️⃣ Valida formato do e-mail
+            try
+            {
+                var endereco = new MailAddress(email);
+                email = endereco.Address; // normaliza o formato
+            }
+            catch
+            {
+                throw new ArgumentException("E-mail inválido. Verifique o endereço digitado.");
+            }
+
+            // 2️⃣ Valida se o domínio existe
+            string dominio = email.Split('@').Last();
+            try
+            {
+                Dns.GetHostEntry(dominio);
+            }
+            catch
+            {
+                throw new ArgumentException("O domínio do e-mail não existe. Verifique o endereço digitado.");
+            }
+
+            // 3️⃣ Gera o código aleatório
             string codigo = new Random().Next(100000, 999999).ToString();
 
             using var conexao = new NpgsqlConnection(_stringConexao);
             conexao.Open();
 
-            // verifca se já existe um email cadastrado
-            var comandoVerificacao = new NpgsqlCommand("SELECT COUNT(*) FROM usuarios WHERE email = @Email", conexao);
-            comandoVerificacao.Parameters.AddWithValue("@Email", email);
-            int count = Convert.ToInt32(comandoVerificacao.ExecuteScalar());
+            // 4️⃣ Verifica se o e-mail já existe no sistema
+            var cmdVerifica = new NpgsqlCommand("SELECT COUNT(*) FROM usuarios WHERE email = @Email", conexao);
+            cmdVerifica.Parameters.AddWithValue("@Email", email);
+            int count = Convert.ToInt32(cmdVerifica.ExecuteScalar());
 
             if (count > 0)
-            {
-                throw new ArgumentException("Já existe um usuário cadastrado com este email.");
-            }
+                throw new ArgumentException("Já existe um usuário cadastrado com este e-mail.");
 
-            var comando = new NpgsqlCommand(@"
+            // 5️⃣ Insere ou atualiza na tabela de verificação
+            var cmdInsert = new NpgsqlCommand(@"
                 INSERT INTO verificacao_email (email, codigo, validade, confirmado)
                 VALUES (@Email, @Codigo, @Validade, false)
                 ON CONFLICT (email)
-                DO UPDATE SET codigo = @Codigo, validade = @Validade, confirmado = false
+                DO UPDATE SET codigo = @Codigo, validade = @Validade, confirmado = false;
             ", conexao);
 
-            comando.Parameters.AddWithValue("@Email", email);
-            comando.Parameters.AddWithValue("@Codigo", codigo);
-            comando.Parameters.AddWithValue("@Validade", DateTime.UtcNow.AddMinutes(10));
-            comando.ExecuteNonQuery();
+            cmdInsert.Parameters.AddWithValue("@Email", email);
+            cmdInsert.Parameters.AddWithValue("@Codigo", codigo);
+            cmdInsert.Parameters.AddWithValue("@Validade", DateTime.UtcNow.AddMinutes(10));
+            cmdInsert.ExecuteNonQuery();
 
-            // Envia o email usando o serviço GmailServico
-            _gmailServico.EnviarEmailAsync(
-                email,
-                "Código de verificação",
-                $"Seu código de verificação é: {codigo}"
-            );
-
-            //var mensagem = new MimeMessage();
-            //mensagem.From.Add(new MailboxAddress("Sistema", _config["EmailSettings:From"]));
-            //mensagem.To.Add(new MailboxAddress("", email));
-            //mensagem.Subject = "Código de verificação";
-            //mensagem.Body = new TextPart("plain")
-            //{
-            //    Text = $"Seu código de verificação é: {codigo}"
-            //};
-
-            //using var client = new SmtpClient();
-            //client.Connect(_config["EmailSettings:SmtpServer"], int.Parse(_config["EmailSettings:SmtpPort"]), true);
-            //client.Authenticate(_config["EmailSettings:Username"], _config["EmailSettings:Password"]);
-            //client.Send(mensagem);
-            //client.Disconnect(true);
-
+            // 6️⃣ Envia o e-mail
+            try
+            {
+                _gmailServico.EnviarEmailAsync(
+                    email,
+                    "Código de verificação",
+                    $"Seu código de verificação é: {codigo}"
+                );
+            }
+            catch
+            {
+                throw new Exception("Não foi possível enviar o e-mail. Verifique se o endereço existe ou está correto.");
+            }
         }
 
         public bool ConfirmarCodigo(string email, string codigo)
@@ -90,16 +100,10 @@ namespace WebApplicationCarbono.Serviços
             if (validadeObj == null)
                 return false;
 
-            DateTimeOffset validadeOffset;
-
-            if (validadeObj is DateTimeOffset dto)
-                validadeOffset = dto;
-            else if (DateTimeOffset.TryParse(validadeObj.ToString(), out var dtoParsed))
-                validadeOffset = dtoParsed;
-            else
+            if (!DateTime.TryParse(validadeObj.ToString(), out DateTime validade))
                 return false;
 
-            if (validadeOffset.UtcDateTime < DateTime.UtcNow)
+            if (validade < DateTime.UtcNow)
                 return false;
 
             var comandoUpdate = new NpgsqlCommand("UPDATE verificacao_email SET confirmado = true WHERE email = @Email", conexao);

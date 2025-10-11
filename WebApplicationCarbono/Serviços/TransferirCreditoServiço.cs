@@ -17,10 +17,10 @@ namespace WebApplicationCarbono.Serviços
         {
             using var conexao = new NpgsqlConnection(_conexao);
             conexao.Open();
-
+            string emailLower = emailOuCnpj.Trim().ToLower();
             var query = "SELECT id, nome, email, cnpj FROM usuarios WHERE email = @valor OR cnpj = @valor";
             using var comando = new NpgsqlCommand(query, conexao);
-            comando.Parameters.AddWithValue("valor", emailOuCnpj);
+            comando.Parameters.AddWithValue("valor", emailLower);
 
             using var leitor = comando.ExecuteReader();
             if (leitor.Read())

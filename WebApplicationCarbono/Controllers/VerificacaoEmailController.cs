@@ -18,21 +18,32 @@ namespace WebApplicationCarbono.Controllers
         [HttpPost("enviar")]
         public IActionResult Enviar([FromBody] string email)
         {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest(new { mensagem = "E-mail não pode estar vazio." });
+
             try
             {
                 _servico.EnviarCodigoVerificacao(email);
-                return Ok(new { mensagem = "Codigo de Verificação Enviado Para Email Informado" });
+                return Ok(new { mensagem = "Código de verificação enviado para o e-mail informado." });
             }
-            catch (System.Exception ex)
+            catch (ArgumentException ex)
             {
+                // erro esperado (e-mail inválido, domínio inexistente, etc)
                 return BadRequest(new { mensagem = ex.Message });
             }
+            catch (Exception ex)
+            {
+                // erro inesperado (falha de SMTP, etc)
+                return StatusCode(500, new { mensagem = "Erro ao enviar e-mail.", detalhe = ex.Message });
+            }
         }
-
 
         [HttpPost("confirmar")]
         public IActionResult Confirmar([FromBody] VerificarCodigoDto dto)
         {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Codigo))
+                return BadRequest(new { mensagem = "E-mail e código são obrigatórios." });
+
             try
             {
                 bool confirmado = _servico.ConfirmarCodigo(dto.Email, dto.Codigo);
@@ -45,11 +56,10 @@ namespace WebApplicationCarbono.Controllers
             {
                 return BadRequest(new { mensagem = ex.Message });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500, new { mensagem = "Erro inesperado. Tente novamente." });
+                return StatusCode(500, new { mensagem = "Erro ao confirmar código.", detalhe = ex.Message });
             }
         }
-
     }
 }

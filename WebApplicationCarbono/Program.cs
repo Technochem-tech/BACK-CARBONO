@@ -18,7 +18,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins("https://incandescent-sherbet-54d32d.netlify.app")
             .AllowAnyHeader()
             .AllowAnyMethod();
-        //policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+       // policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
 
     });
 });

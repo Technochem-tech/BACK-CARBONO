@@ -47,7 +47,7 @@ namespace WebApplicationCarbono.Serviços
                         }
                         else
                         {
-                            throw new Exception("Usuário não encontrado.");
+                            throw new Exception("E-mail ou senha inválidos. Tente novamente.");
                         }
                     }
                 }
@@ -56,7 +56,7 @@ namespace WebApplicationCarbono.Serviços
             // Verifica a senha usando o mesmo algoritmo BCrypt
             if (!BCrypt.Net.BCrypt.Verify(loginDto.Senha, senhaHashBanco))
             {
-                throw new Exception("Usuário ou senha incorretos.");
+                throw new Exception("E-mail ou senha inválidos. Tente novamente.");
 
             }
 
