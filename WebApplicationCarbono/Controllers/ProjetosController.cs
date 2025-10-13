@@ -88,5 +88,21 @@ namespace WebApplicationCarbono.controler
                 return BadRequest(ex.Message);
             }
         }
+
+        [Authorize]
+        [HttpGet("BuscarPorId/{id}")]
+        public IActionResult BuscarPorId(int id)
+        {
+            try
+            {
+                var projeto = _projetoServiços.BuscarProjetoPorId(id);
+                return Ok(projeto);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(new { erro = ex.Message });
+            }
+        }
+
     }
 }

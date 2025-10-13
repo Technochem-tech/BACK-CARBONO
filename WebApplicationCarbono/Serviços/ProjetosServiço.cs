@@ -14,6 +14,54 @@ namespace WebApplicationCarbono.Serviços
             _stringConexao = configuaração.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("DefaultConnection", "A string de conexão não pode ser nula.");
         }
 
+        public object BuscarProjetoPorId(int id)
+        {
+            try
+            {
+                using (var conexao = new NpgsqlConnection(_stringConexao))
+                {
+                    conexao.Open();
+
+                    var comando = new NpgsqlCommand(
+                        "SELECT id, titulo, valor, descricao, img_projetos, creditos_disponivel FROM projetos WHERE id = @Id",
+                        conexao
+                    );
+
+                    comando.Parameters.AddWithValue("@Id", id);
+
+                    using (var reader = comando.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            byte[]? imagemBytes = reader["img_projetos"] as byte[];
+                            string? imagemBase64 = imagemBytes != null ? Convert.ToBase64String(imagemBytes) : null;
+
+                            var projeto = new
+                            {
+                                id = reader["id"],
+                                titulo = reader["titulo"].ToString(),
+                                valor = Convert.ToDecimal(reader["valor"]),
+                                descricao = reader["descricao"].ToString(),
+                                imgBase64 = imagemBase64,
+                                creditosDisponivel = Convert.ToDecimal(reader["creditos_disponivel"])
+                            };
+
+                            return projeto;
+                        }
+                        else
+                        {
+                            throw new Exception("Projeto não encontrado.");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Erro ao buscar projeto por ID: " + ex.Message);
+            }
+        }
+
+
         public void CadastrarProjetos(CadastroProjetosDto dto, byte[] imagemBytes)
         {
             using var conexao = new NpgsqlConnection(_stringConexao);
