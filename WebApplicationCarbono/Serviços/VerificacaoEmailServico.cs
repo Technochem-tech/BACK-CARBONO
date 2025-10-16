@@ -71,11 +71,13 @@ namespace WebApplicationCarbono.Serviços
             // 6️⃣ Envia o e-mail
             try
             {
-                _gmailServico.EnviarEmailAsync(
-                    email,
-                    "Código de verificação",
-                    $"Seu código de verificação é: {codigo}"
-                );
+                //_gmailServico.EnviarEmailAsync(
+                //    email,
+                //    "Código de verificação",
+                //    $"Seu código de verificação é: {codigo}"
+                //);
+
+                throw new Exception("Não foi possível enviar o e-mail");
             }
             catch
             {
